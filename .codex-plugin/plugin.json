@@ -1,0 +1,25 @@
+{
+  "name": "obs-studio-bridge",
+  "version": "1.0.0",
+  "description": "Secure, allowlisted OBS Studio controls over the Model Context Protocol.",
+  "author": {
+    "name": "TPC Global"
+  },
+  "license": "MIT",
+  "keywords": ["obs", "streaming", "recording", "mcp"],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "OBS Studio Bridge",
+    "shortDescription": "Inspect and control OBS Studio safely.",
+    "longDescription": "Connect ChatGPT or Codex to OBS Studio through a localhost-only, bearer-authenticated MCP bridge with a fixed allowlist of inspection and control actions.",
+    "developerName": "TPC Global",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "defaultPrompt": [
+      "Check OBS status and diagnose performance.",
+      "List my OBS scenes and visible sources.",
+      "Show my audio inputs and mute states."
+    ],
+    "brandColor": "#302E31"
+  }
+}
