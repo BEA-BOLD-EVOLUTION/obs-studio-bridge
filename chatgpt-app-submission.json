@@ -1,0 +1,144 @@
+{
+  "$schema": "https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "OBS Creator Assistant",
+    "subtitle": "Control OBS from ChatGPT",
+    "description": "OBS Creator Assistant securely connects ChatGPT to a creator's own OBS Studio computer so they can inspect OBS, switch scenes, share a screen or window, run AI transitions, and execute creator-defined LIVE workflows.",
+    "category": "PRODUCTIVITY"
+  },
+  "tools": {
+    "obs_pair_computer": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Pairs an unclaimed local OBS computer to the authenticated user's private account.",
+        "open_world_justification": "Changes only private account-to-device ownership and does not publish or send public content.",
+        "destructive_justification": "Does not delete data or revoke an existing device relationship."
+      }
+    },
+    "obs_list_my_computers": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Only retrieves OBS computers owned by the authenticated user and their connection status.",
+        "open_world_justification": "Reads private account data and does not modify external or public systems.",
+        "destructive_justification": "Does not delete, revoke, overwrite, or otherwise change device state."
+      }
+    },
+    "obs_inspect_status": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Only retrieves current OBS stream, recording, replay-buffer, and version status from the user's computer.",
+        "open_world_justification": "Reads private local OBS state without changing public internet state.",
+        "destructive_justification": "Does not change OBS configuration or output state."
+      }
+    },
+    "obs_list_scenes": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Only lists scene information from the user's own OBS instance.",
+        "open_world_justification": "Reads private local OBS configuration and does not publish externally.",
+        "destructive_justification": "Does not modify scenes or sources."
+      }
+    },
+    "obs_switch_scene": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Changes the active scene on the authenticated user's private OBS instance.",
+        "open_world_justification": "Controls a private local production application and does not directly publish content to an external service.",
+        "destructive_justification": "Scene switching is reversible and does not delete or overwrite OBS resources."
+      }
+    },
+    "obs_run_ai_transition": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Plays a user-selected three-part media sequence and changes temporary OBS presentation state.",
+        "open_world_justification": "Operates only on the user's private OBS instance and does not itself publish to a public platform.",
+        "destructive_justification": "The workflow restores the prior LIVE scene and does not delete media or scenes."
+      }
+    },
+    "obs_share_screen_or_window": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Changes OBS source visibility and layout to show an existing screen or window capture source.",
+        "open_world_justification": "Controls private OBS presentation state and does not directly send data to a public service.",
+        "destructive_justification": "Does not delete or overwrite sources and the creator can return to the previous scene."
+      }
+    },
+    "obs_run_custom_workflow": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Executes creator-defined OBS actions such as scene changes, media playback, source visibility, timing, and audio changes.",
+        "open_world_justification": "The allowlisted workflow operates on the authenticated user's private OBS instance rather than public internet state.",
+        "destructive_justification": "The exposed workflow action set does not delete OBS scenes, sources, media, or account data."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Pair a newly installed creator computer using its six-digit code.",
+      "user_prompt": "Pair code 483921.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_pair_computer",
+      "expected_output": "Confirms that the matching unclaimed OBS computer was paired to the authenticated account or clearly reports an invalid or expired code.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Check whether the creator's OBS computer is connected and ready.",
+      "user_prompt": "Is my OBS connected and am I currently streaming?",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_inspect_status",
+      "expected_output": "Returns the current OBS connection and output status for the creator's owned computer.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Switch to an existing OBS scene.",
+      "user_prompt": "Switch my OBS to the Battle scene.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_switch_scene",
+      "expected_output": "Switches the creator's OBS program scene to Battle and confirms the change.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Run the flagship three-part AI transition workflow.",
+      "user_prompt": "Run my AI transition using Transition In, Dragon Video, and Transition Out on my Media scene.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_run_ai_transition",
+      "expected_output": "Runs the three media clips in order and returns the creator to the prior LIVE scene, or safely reports a media failure.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Share an existing window capture with camera picture-in-picture.",
+      "user_prompt": "Share my Chrome capture on the Screen Share scene and keep my camera picture-in-picture.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_share_screen_or_window",
+      "expected_output": "Shows the requested capture source with the camera picture-in-picture on the creator's OBS instance.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Do not invoke OBS tools for general streaming advice.",
+      "user_prompt": "What makes a good livestream introduction?",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "Answers normally without accessing OBS because the user asked for advice rather than an OBS action or inspection.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not invoke OBS tools for unrelated computer controls.",
+      "user_prompt": "Close Chrome and restart my computer.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "Does not invoke the app because operating system process and restart controls are outside its allowlisted OBS capabilities.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not use a creator's account to control another creator's device.",
+      "user_prompt": "Switch the scene on my friend's OBS computer even though it is not paired to my account.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "Refuses or explains that OBS Creator Assistant can only access computers paired to the authenticated user's account.",
+      "expected_output_url": null
+    }
+  ]
+}
