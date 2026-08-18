@@ -83,6 +83,18 @@ $envLines = @(
 )
 Set-Content -LiteralPath $envPath -Value $envLines -Encoding UTF8
 
+$setupTemplate = Join-Path $PackageRoot 'creator-setup.html'
+if (-not (Test-Path -LiteralPath $setupTemplate)) {
+    $setupTemplate = Join-Path $PackageRoot 'installer\creator-setup.html'
+}
+if (-not (Test-Path -LiteralPath $setupTemplate)) {
+    throw 'Creator onboarding page is missing from this release package.'
+}
+$setupHtml = Get-Content -LiteralPath $setupTemplate -Raw
+$setupHtml = $setupHtml.Replace('__CHATGPT_PLUGIN_URL__', $chatgptPluginUrl)
+$setupPagePath = Join-Path $InstallRoot 'OBS Creator Assistant.html'
+Set-Content -LiteralPath $setupPagePath -Value $setupHtml -Encoding UTF8
+
 $launcher = @"
 @echo off
 cd /d "$InstallRoot"
@@ -101,8 +113,7 @@ if (-not $NoDesktopShortcut) {
     $shell = New-Object -ComObject WScript.Shell
     $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'OBS Creator Assistant.lnk'
     $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = 'explorer.exe'
-    $shortcut.Arguments = 'http://127.0.0.1:8787/setup'
+    $shortcut.TargetPath = $setupPagePath
     $shortcut.WorkingDirectory = $InstallRoot
     $shortcut.Description = 'Open OBS Creator Assistant'
     $shortcut.Save()
@@ -133,7 +144,7 @@ $config | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallRoot 'con
 Write-Host ''
 if ($healthy) {
     Write-Host 'Setup complete. OBS Creator Assistant is running.' -ForegroundColor Green
-    Start-Process 'http://127.0.0.1:8787/setup'
 } else {
     Write-Warning 'Creator Assistant is installed, but OBS is not connected yet. Open OBS Studio, then open OBS Creator Assistant from your desktop.'
 }
+Start-Process $setupPagePath
