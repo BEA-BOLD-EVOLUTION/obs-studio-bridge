@@ -5,7 +5,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$PackageRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+if (Test-Path -LiteralPath (Join-Path $ScriptRoot 'dist')) {
+    $PackageRoot = $ScriptRoot
+} else {
+    $PackageRoot = Split-Path -Parent $ScriptRoot
+}
 
 function Write-Step([string]$Text) {
     Write-Host "`n$Text" -ForegroundColor Cyan
