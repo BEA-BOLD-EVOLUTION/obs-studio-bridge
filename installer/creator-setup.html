@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OBS Creator Assistant</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f1f1f;background:#f4f4f4}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}main{width:min(620px,100%);background:#fff;border:1px solid #ddd;border-radius:20px;padding:32px;box-shadow:0 14px 45px rgba(0,0,0,.08)}h1{margin:0 0 8px;font-size:30px}p{color:#555;line-height:1.5}.check{display:flex;justify-content:space-between;padding:15px 0;border-top:1px solid #eee}.check:last-of-type{border-bottom:1px solid #eee}.ok{font-weight:700;color:#176b37}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}a,button{border:0;border-radius:10px;padding:12px 18px;font:inherit;text-decoration:none}.primary{background:#1f1f1f;color:#fff}.secondary{background:#eee;color:#1f1f1f}button[disabled]{opacity:.45}.examples{margin-top:28px;padding:18px;background:#f7f7f7;border-radius:12px}.examples p{margin:6px 0;color:#333}small{display:block;margin-top:22px;color:#777;line-height:1.45}</style>
+</head>
+<body>
+<main>
+<h1>OBS Creator Assistant</h1>
+<p>Your computer is set up. You do not need to configure servers, copy tokens, or edit OBS files.</p>
+<div class="check"><span>Creator Assistant</span><span class="ok">Installed</span></div>
+<div class="check"><span>Automatic startup</span><span class="ok">On</span></div>
+<div class="actions" id="actions"></div>
+<div class="examples">
+<strong>After connecting, try:</strong>
+<p>“Set me up for LIVE.”</p>
+<p>“Share my Chrome window and keep my camera visible.”</p>
+<p>“Run my AI transition.”</p>
+<p>“Why is my OBS lagging?”</p>
+</div>
+<small>OBS Creator Assistant runs locally on your computer and controls OBS only through the actions exposed by the installed assistant.</small>
+</main>
+<script>
+const pluginUrl = "__CHATGPT_PLUGIN_URL__";
+const actions = document.getElementById("actions");
+if (pluginUrl && pluginUrl !== "__CHATGPT_PLUGIN_URL__") {
+  const connect = document.createElement("a");
+  connect.className = "primary";
+  connect.href = pluginUrl;
+  connect.target = "_blank";
+  connect.rel = "noopener noreferrer";
+  connect.textContent = "Connect ChatGPT";
+  actions.appendChild(connect);
+} else {
+  const pending = document.createElement("button");
+  pending.className = "primary";
+  pending.disabled = true;
+  pending.textContent = "ChatGPT connection not published yet";
+  actions.appendChild(pending);
+}
+const obs = document.createElement("a");
+obs.className = "secondary";
+obs.href = "https://obsproject.com/";
+obs.target = "_blank";
+obs.rel = "noopener noreferrer";
+obs.textContent = "OBS Studio";
+actions.appendChild(obs);
+</script>
+</body>
+</html>
