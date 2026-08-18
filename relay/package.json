@@ -1,12 +1,13 @@
 {
   "name": "obs-creator-assistant-relay",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node src/server.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
     "express": "^5.2.1",
     "ws": "^8.18.3"
   }
