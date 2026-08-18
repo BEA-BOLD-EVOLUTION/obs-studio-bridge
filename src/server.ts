@@ -6,6 +6,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { OBSWebSocket } from "obs-websocket-js";
 import { z } from "zod";
+import { registerWorkflowTools } from "./workflows.js";
 
 const host = "127.0.0.1";
 const port = parseInteger(process.env.BRIDGE_PORT, 8787);
@@ -78,7 +79,7 @@ function authorize(req: Request, res: Response, next: NextFunction): void {
 }
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "obs-studio-bridge", version: "1.0.0" });
+  const server = new McpServer({ name: "obs-studio-bridge", version: "1.1.0" });
 
   server.registerTool("obs_inspect_status", {
     description: "Inspect OBS version plus stream, recording, and replay-buffer status.",
@@ -213,6 +214,8 @@ function createMcpServer(): McpServer {
     await obsCall("SaveReplayBuffer");
     return result({ ok: true, replaySaved: true });
   });
+
+  registerWorkflowTools(server, obsCall);
 
   return server;
 }
