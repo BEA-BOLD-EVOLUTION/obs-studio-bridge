@@ -42,15 +42,21 @@ jobs:
 
       - name: Assemble creator package
         shell: pwsh
+        env:
+          CHATGPT_PLUGIN_URL: ${{ vars.CHATGPT_PLUGIN_URL }}
         run: |
           Copy-Item dist creator-release/dist -Recurse
           Copy-Item node_modules creator-release/node_modules -Recurse
           Copy-Item installer/install-creator.ps1 creator-release/install-creator.ps1
           Copy-Item installer/Setup.cmd creator-release/Setup.cmd
+          Copy-Item installer/creator-setup.html creator-release/creator-setup.html
           Copy-Item package.json creator-release/package.json
           Copy-Item .env.example creator-release/.env.example
           Copy-Item start-bridge.ps1 creator-release/start-bridge.ps1
           Copy-Item update-bridge.ps1 creator-release/update-bridge.ps1
+          if ($env:CHATGPT_PLUGIN_URL) {
+            (Get-Content creator-release/.env.example -Raw).Replace('CHATGPT_PLUGIN_URL=', "CHATGPT_PLUGIN_URL=$env:CHATGPT_PLUGIN_URL") | Set-Content creator-release/.env.example -Encoding UTF8
+          }
           Compress-Archive -Path creator-release/* -DestinationPath OBS-Creator-Assistant-Windows.zip -Force
 
       - name: Upload Windows creator package
