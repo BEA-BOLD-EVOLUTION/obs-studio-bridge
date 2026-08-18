@@ -70,35 +70,27 @@ if (-not (Test-Path -LiteralPath $bundledNode)) {
 New-Item -ItemType Directory -Path (Join-Path $InstallRoot 'runtime') -Force | Out-Null
 Copy-Item -LiteralPath $bundledNode -Destination (Join-Path $InstallRoot 'runtime\node.exe') -Force
 
-Write-Step '3 of 5  Creating a secure local connection'
+Write-Step '3 of 5  Creating secure connections'
 $envPath = Join-Path $InstallRoot '.env'
 $token = New-RandomToken
 $chatgptPluginUrl = Read-PackageSetting 'CHATGPT_PLUGIN_URL'
+$relayUrl = Read-PackageSetting 'RELAY_URL'
+if (-not $relayUrl) { $relayUrl = 'https://relay-production-bbb4.up.railway.app' }
 $envLines = @(
     'BRIDGE_PORT=8787',
+    'ONBOARDING_PORT=8788',
     'OBS_WEBSOCKET_URL=ws://127.0.0.1:4455',
     'OBS_WEBSOCKET_PASSWORD=',
     "BRIDGE_AUTH_TOKEN=$token",
+    "RELAY_URL=$relayUrl",
     "CHATGPT_PLUGIN_URL=$chatgptPluginUrl"
 )
 Set-Content -LiteralPath $envPath -Value $envLines -Encoding UTF8
 
-$setupTemplate = Join-Path $PackageRoot 'creator-setup.html'
-if (-not (Test-Path -LiteralPath $setupTemplate)) {
-    $setupTemplate = Join-Path $PackageRoot 'installer\creator-setup.html'
-}
-if (-not (Test-Path -LiteralPath $setupTemplate)) {
-    throw 'Creator onboarding page is missing from this release package.'
-}
-$setupHtml = Get-Content -LiteralPath $setupTemplate -Raw
-$setupHtml = $setupHtml.Replace('__CHATGPT_PLUGIN_URL__', $chatgptPluginUrl)
-$setupPagePath = Join-Path $InstallRoot 'OBS Creator Assistant.html'
-Set-Content -LiteralPath $setupPagePath -Value $setupHtml -Encoding UTF8
-
 $launcher = @"
 @echo off
 cd /d "$InstallRoot"
-"$InstallRoot\runtime\node.exe" "$InstallRoot\dist\server.js"
+"$InstallRoot\runtime\node.exe" "$InstallRoot\dist\bootstrap.js"
 "@
 Set-Content -LiteralPath (Join-Path $InstallRoot 'OBS Creator Assistant.cmd') -Value $launcher -Encoding ASCII
 
@@ -110,23 +102,20 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Description 'Starts OBS Creator Assistant when the user signs in.' -Force | Out-Null
 
 if (-not $NoDesktopShortcut) {
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'OBS Creator Assistant.lnk'
-    $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $setupPagePath
-    $shortcut.WorkingDirectory = $InstallRoot
-    $shortcut.Description = 'Open OBS Creator Assistant'
-    $shortcut.Save()
+    $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'OBS Creator Assistant.url'
+    $shortcutContent = "[InternetShortcut]`r`nURL=http://127.0.0.1:8788/`r`n"
+    Set-Content -LiteralPath $shortcutPath -Value $shortcutContent -Encoding ASCII
 }
 
 Start-ScheduledTask -TaskName $taskName
 
 Write-Step '5 of 5  Testing the connection'
 $healthy = $false
-for ($i = 0; $i -lt 20; $i++) {
+for ($i = 0; $i -lt 30; $i++) {
     try {
         $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8787/health' -Method Get -TimeoutSec 2
-        if ($health.ok -eq $true) { $healthy = $true; break }
+        $onboarding = Invoke-WebRequest -Uri 'http://127.0.0.1:8788/' -Method Get -TimeoutSec 2 -UseBasicParsing
+        if ($health.ok -eq $true -and $onboarding.StatusCode -eq 200) { $healthy = $true; break }
     } catch {}
     Start-Sleep -Milliseconds 500
 }
@@ -137,6 +126,8 @@ $config = [ordered]@{
     obsDetected = [bool]$obsExe
     obsPath = $obsExe
     bridgeHealthy = $healthy
+    relayUrl = $relayUrl
+    onboardingUrl = 'http://127.0.0.1:8788/'
     chatgptConfigured = [bool]$chatgptPluginUrl
 }
 $config | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallRoot 'connection.json') -Encoding UTF8
@@ -145,6 +136,6 @@ Write-Host ''
 if ($healthy) {
     Write-Host 'Setup complete. OBS Creator Assistant is running.' -ForegroundColor Green
 } else {
-    Write-Warning 'Creator Assistant is installed, but OBS is not connected yet. Open OBS Studio, then open OBS Creator Assistant from your desktop.'
+    Write-Warning 'Creator Assistant is installed but has not finished connecting. Open OBS Studio, then open OBS Creator Assistant from your desktop.'
 }
-Start-Process $setupPagePath
+Start-Process 'http://127.0.0.1:8788/'
