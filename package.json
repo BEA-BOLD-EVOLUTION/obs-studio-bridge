@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/bootstrap.js",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
