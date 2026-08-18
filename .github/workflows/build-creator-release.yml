@@ -1,0 +1,66 @@
+name: Build Creator Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Type check
+        run: npm run check
+
+      - name: Build bridge
+        run: npm run build
+
+      - name: Download portable Node runtime
+        shell: pwsh
+        run: |
+          $nodeVersion = node --version
+          $zipName = "node-$nodeVersion-win-x64.zip"
+          $url = "https://nodejs.org/dist/$nodeVersion/$zipName"
+          Invoke-WebRequest -Uri $url -OutFile node-runtime.zip
+          Expand-Archive -Path node-runtime.zip -DestinationPath node-runtime
+          $runtimeDir = Get-ChildItem node-runtime -Directory | Select-Object -First 1
+          New-Item -ItemType Directory -Path creator-release/runtime -Force | Out-Null
+          Copy-Item "$($runtimeDir.FullName)/node.exe" creator-release/runtime/node.exe
+
+      - name: Assemble creator package
+        shell: pwsh
+        run: |
+          Copy-Item dist creator-release/dist -Recurse
+          Copy-Item node_modules creator-release/node_modules -Recurse
+          Copy-Item installer/install-creator.ps1 creator-release/install-creator.ps1
+          Copy-Item installer/Setup.cmd creator-release/Setup.cmd
+          Copy-Item package.json creator-release/package.json
+          Copy-Item .env.example creator-release/.env.example
+          Copy-Item start-bridge.ps1 creator-release/start-bridge.ps1
+          Copy-Item update-bridge.ps1 creator-release/update-bridge.ps1
+          Compress-Archive -Path creator-release/* -DestinationPath OBS-Creator-Assistant-Windows.zip -Force
+
+      - name: Upload Windows creator package
+        uses: actions/upload-artifact@v4
+        with:
+          name: OBS-Creator-Assistant-Windows
+          path: OBS-Creator-Assistant-Windows.zip
+
+      - name: Publish tagged release asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: OBS-Creator-Assistant-Windows.zip
