@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -20,14 +22,33 @@ const write = {
   openWorldHint: false
 };
 
-export function createCreatorMcpServer({ accessToken, listDevices, pairDevice, dispatchCommand }) {
+function hash(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+async function pairComputer(accessToken, pairingCode) {
+  const supabaseUrl = process.env.SUPABASE_URL || "";
+  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || "";
+  const client = createClient(supabaseUrl, publishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } }
+  });
+  const { data, error } = await client.rpc("claim_obs_device_by_code", {
+    p_pairing_code_hash: hash(pairingCode)
+  });
+  if (error) throw error;
+  if (!data) throw new Error("That pairing code is incorrect, expired, or ambiguous. Generate a new code on the OBS computer and try again.");
+  return { ok: true, deviceId: data, message: "OBS computer paired to this account." };
+}
+
+export function createCreatorMcpServer({ accessToken, listDevices, dispatchCommand }) {
   const server = new McpServer({ name: "obs-creator-assistant", version: "0.3.0" });
 
   server.registerTool("obs_pair_computer", {
     description: "Use this when the creator gives a six-digit pairing code shown by OBS Creator Assistant on their computer. Pair that computer to the signed-in creator account.",
     inputSchema: { pairingCode: z.string().regex(/^\d{6}$/) },
     annotations: write
-  }, async ({ pairingCode }) => result(await pairDevice(accessToken, pairingCode)));
+  }, async ({ pairingCode }) => result(await pairComputer(accessToken, pairingCode)));
 
   server.registerTool("obs_list_my_computers", {
     description: "Use this when the creator wants to see which OBS computers are linked to their account or whether they are online.",
