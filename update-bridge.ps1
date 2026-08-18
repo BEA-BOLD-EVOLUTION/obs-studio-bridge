@@ -23,18 +23,19 @@ function Stop-BridgeSafely {
         return
     }
 
-    $bridgePid = (Get-Content -LiteralPath $pidFile -Raw).Trim()
-    if (-not [int]::TryParse($bridgePid, [ref]$null)) {
+    $bridgePidText = (Get-Content -LiteralPath $pidFile -Raw).Trim()
+    $bridgePid = 0
+    if (-not [int]::TryParse($bridgePidText, [ref]$bridgePid)) {
         Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
         Write-Host 'Bridge PID file was invalid and has been removed.'
         return
     }
 
-    $process = Get-Process -Id ([int]$bridgePid) -ErrorAction SilentlyContinue
+    $process = Get-Process -Id $bridgePid -ErrorAction SilentlyContinue
     if ($process) {
         Write-Host "Stopping OBS bridge PID $bridgePid..."
-        Stop-Process -Id ([int]$bridgePid) -Force
-        try { Wait-Process -Id ([int]$bridgePid) -Timeout 10 -ErrorAction SilentlyContinue } catch {}
+        Stop-Process -Id $bridgePid -Force
+        try { Wait-Process -Id $bridgePid -Timeout 10 -ErrorAction SilentlyContinue } catch {}
     }
     Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
 }
@@ -55,7 +56,10 @@ function Wait-ForHealth {
         $portLine = Get-Content -LiteralPath $envPath | Where-Object { $_ -match '^BRIDGE_PORT=' } | Select-Object -First 1
         if ($portLine) {
             $parsed = ($portLine -split '=', 2)[1].Trim()
-            if ([int]::TryParse($parsed, [ref]$port)) { }
+            $parsedPort = 0
+            if ([int]::TryParse($parsed, [ref]$parsedPort) -and $parsedPort -gt 0 -and $parsedPort -le 65535) {
+                $port = $parsedPort
+            }
         }
     }
 
@@ -102,11 +106,11 @@ if ($previousSha -eq $targetSha -and -not $Force) {
 }
 
 $lockChanged = $false
-try {
-    git diff --quiet $previousSha $targetSha -- package-lock.json pnpm-lock.yaml
-    $lockChanged = ($LASTEXITCODE -ne 0)
-} catch {
+git diff --quiet $previousSha $targetSha -- package-lock.json pnpm-lock.yaml
+if ($LASTEXITCODE -eq 1) {
     $lockChanged = $true
+} elseif ($LASTEXITCODE -ne 0) {
+    throw 'Unable to compare dependency lockfiles.'
 }
 
 Stop-BridgeSafely
@@ -119,7 +123,7 @@ try {
         Write-Host 'Dependency lockfile changed; installing dependencies...'
         if (Test-Path -LiteralPath 'package-lock.json') {
             Invoke-Checked 'npm' @('ci')
-        } elseif (Test-Path -LiteralPath 'pnpm-lock.yaml' -and (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+        } elseif ((Test-Path -LiteralPath 'pnpm-lock.yaml') -and (Get-Command pnpm -ErrorAction SilentlyContinue)) {
             Invoke-Checked 'pnpm' @('install', '--frozen-lockfile')
         } else {
             Invoke-Checked 'npm' @('install')
