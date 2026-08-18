@@ -34,6 +34,14 @@ function Find-ObsExecutable {
     return $null
 }
 
+function Read-PackageSetting([string]$Name) {
+    $examplePath = Join-Path $PackageRoot '.env.example'
+    if (-not (Test-Path -LiteralPath $examplePath)) { return '' }
+    $line = Get-Content -LiteralPath $examplePath | Where-Object { $_ -match "^$([regex]::Escape($Name))=" } | Select-Object -First 1
+    if (-not $line) { return '' }
+    return ($line -split '=', 2)[1].Trim()
+}
+
 Write-Host 'OBS Creator Assistant' -ForegroundColor White
 Write-Host 'Creator-friendly setup for OBS automation.' -ForegroundColor DarkGray
 
@@ -65,11 +73,13 @@ Copy-Item -LiteralPath $bundledNode -Destination (Join-Path $InstallRoot 'runtim
 Write-Step '3 of 5  Creating a secure local connection'
 $envPath = Join-Path $InstallRoot '.env'
 $token = New-RandomToken
+$chatgptPluginUrl = Read-PackageSetting 'CHATGPT_PLUGIN_URL'
 $envLines = @(
     'BRIDGE_PORT=8787',
     'OBS_WEBSOCKET_URL=ws://127.0.0.1:4455',
     'OBS_WEBSOCKET_PASSWORD=',
-    "BRIDGE_AUTH_TOKEN=$token"
+    "BRIDGE_AUTH_TOKEN=$token",
+    "CHATGPT_PLUGIN_URL=$chatgptPluginUrl"
 )
 Set-Content -LiteralPath $envPath -Value $envLines -Encoding UTF8
 
@@ -91,10 +101,10 @@ if (-not $NoDesktopShortcut) {
     $shell = New-Object -ComObject WScript.Shell
     $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'OBS Creator Assistant.lnk'
     $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = 'cmd.exe'
-    $shortcut.Arguments = "/c `"$InstallRoot\OBS Creator Assistant.cmd`""
+    $shortcut.TargetPath = 'explorer.exe'
+    $shortcut.Arguments = 'http://127.0.0.1:8787/setup'
     $shortcut.WorkingDirectory = $InstallRoot
-    $shortcut.Description = 'Start OBS Creator Assistant'
+    $shortcut.Description = 'Open OBS Creator Assistant'
     $shortcut.Save()
 }
 
@@ -116,15 +126,14 @@ $config = [ordered]@{
     obsDetected = [bool]$obsExe
     obsPath = $obsExe
     bridgeHealthy = $healthy
-    bridgeUrl = 'http://127.0.0.1:8787/mcp'
-    bridgeToken = $token
+    chatgptConfigured = [bool]$chatgptPluginUrl
 }
 $config | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallRoot 'connection.json') -Encoding UTF8
 
 Write-Host ''
 if ($healthy) {
     Write-Host 'Setup complete. OBS Creator Assistant is running.' -ForegroundColor Green
+    Start-Process 'http://127.0.0.1:8787/setup'
 } else {
-    Write-Warning 'Creator Assistant is installed, but OBS is not connected yet. Open OBS Studio and enable its WebSocket server, then restart Creator Assistant.'
+    Write-Warning 'Creator Assistant is installed, but OBS is not connected yet. Open OBS Studio, then open OBS Creator Assistant from your desktop.'
 }
-Write-Host "Connection details were saved to: $InstallRoot\connection.json"
