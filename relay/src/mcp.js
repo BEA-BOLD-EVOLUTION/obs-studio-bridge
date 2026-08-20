@@ -42,8 +42,17 @@ async function pairComputer(accessToken, pairingCode) {
   return { ok: true, deviceId: data, message: "OBS computer paired to this account." };
 }
 
-export function createCreatorMcpServer({ accessToken, listDevices, dispatchCommand }) {
-  const server = new McpServer({ name: "obs-creator-assistant", version: "0.3.0" });
+export function createCreatorMcpServer({
+  accessToken,
+  ownerUserId,
+  listDevices,
+  dispatchCommand,
+  updateDevice,
+  saveDualPcPreset,
+  listDualPcPresets,
+  inspectDualPcReadiness
+}) {
+  const server = new McpServer({ name: "obs-creator-assistant", version: "0.4.0" });
 
   server.registerTool("obs_pair_computer", {
     description: "Use this when the creator gives a six-digit pairing code shown by OBS Creator Assistant on their computer. Pair that computer to the signed-in creator account.",
@@ -56,6 +65,49 @@ export function createCreatorMcpServer({ accessToken, listDevices, dispatchComma
     inputSchema: {},
     annotations: readOnly
   }, async () => result({ devices: await listDevices(accessToken) }));
+
+  server.registerTool("obs_update_computer", {
+    description: "Name a linked OBS computer, assign its Background or Camera/Compositor production role, or make it the default computer. Use listed device IDs only.",
+    inputSchema: {
+      deviceId: z.string().uuid(),
+      name: z.string().trim().min(1).max(120).optional(),
+      productionRole: z.enum(["background", "camera_compositor"]).nullable().optional(),
+      isDefault: z.boolean().optional()
+    },
+    annotations: { ...write, idempotentHint: true }
+  }, async ({ deviceId, ...input }) => result(await updateDevice(accessToken, deviceId, input)));
+
+  server.registerTool("obs_save_dual_pc_preset", {
+    description: "Save or update a reusable two-computer TikTok LIVE Studio production preset after both linked computers have clear roles. TikTok audio remains a separate creator-controlled setup.",
+    inputSchema: {
+      presetId: z.string().uuid().optional(),
+      name: z.string().trim().min(1).max(120),
+      backgroundDeviceId: z.string().uuid(),
+      backgroundSceneName: z.string().trim().min(1).max(120),
+      compositorDeviceId: z.string().uuid(),
+      compositorSceneName: z.string().trim().min(1).max(120),
+      receivingSourceName: z.string().trim().min(1).max(120),
+      cameraSourceName: z.string().trim().min(1).max(120).optional(),
+      overlaySourceNames: z.array(z.string().trim().min(1).max(120)).max(20).default([]),
+      expectedWidth: z.number().int().min(320).max(7680),
+      expectedHeight: z.number().int().min(240).max(7680),
+      expectedFps: z.number().min(1).max(120),
+      tiktokAudioConfiguredSeparately: z.literal(true).describe("Acknowledges that TikTok LIVE Studio audio must be configured and tested separately.")
+    },
+    annotations: { ...write, idempotentHint: true }
+  }, async input => result(await saveDualPcPreset(accessToken, ownerUserId, input)));
+
+  server.registerTool("obs_list_dual_pc_presets", {
+    description: "List the authenticated creator's saved two-computer TikTok production presets.",
+    inputSchema: {},
+    annotations: readOnly
+  }, async () => result({ presets: await listDualPcPresets(accessToken) }));
+
+  server.registerTool("obs_inspect_dual_pc_readiness", {
+    description: "Read-only preflight for a saved dual-PC preset. Checks ownership, connectivity, scenes, required sources, video settings, and OBS Virtual Camera state without changing OBS or TikTok LIVE Studio.",
+    inputSchema: { presetId: z.string().uuid() },
+    annotations: readOnly
+  }, async ({ presetId }) => result(await inspectDualPcReadiness(accessToken, presetId)));
 
   server.registerTool("obs_inspect_status", {
     description: "Use this when the creator asks whether OBS is connected, streaming, recording, or ready to use.",

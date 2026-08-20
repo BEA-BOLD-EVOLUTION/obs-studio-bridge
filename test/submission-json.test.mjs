@@ -13,3 +13,13 @@ test("ChatGPT submission metadata includes the Phase 2 virtual camera tools", as
   assert.equal(submission.tools.obs_start_virtual_camera.annotations.readOnlyHint, false);
   assert.equal(submission.tools.obs_stop_virtual_camera.annotations.readOnlyHint, false);
 });
+
+test("ChatGPT submission metadata includes dual-PC setup and readiness tools", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+
+  assert.equal(submission.tools.obs_update_computer.annotations.readOnlyHint, false);
+  assert.equal(submission.tools.obs_save_dual_pc_preset.annotations.readOnlyHint, false);
+  assert.equal(submission.tools.obs_list_dual_pc_presets.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.obs_inspect_dual_pc_readiness.annotations.readOnlyHint, true);
+});

@@ -7,6 +7,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { OBSWebSocket } from "obs-websocket-js";
 import { z } from "zod";
 import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
+import { inspectProductionResources } from "./production-readiness.js";
 import { registerWorkflowTools } from "./workflows.js";
 
 const host = "127.0.0.1";
@@ -140,6 +141,15 @@ function createMcpServer(): McpServer {
     inputSchema: {},
     annotations: readOnlyAnnotations
   }, async () => result(await obsCall("GetStats")));
+
+  server.registerTool("obs_inspect_production_resources", {
+    description: "Read-only validation of a named scene, its required sources, OBS video settings, and Virtual Camera state for a production readiness check.",
+    inputSchema: {
+      sceneName: z.string().min(1).max(120),
+      sourceNames: z.array(z.string().min(1).max(120)).max(24).optional()
+    },
+    annotations: readOnlyAnnotations
+  }, async ({ sceneName, sourceNames }) => result(await inspectProductionResources(obsCall, { sceneName, sourceNames })));
 
   server.registerTool("obs_diagnose_performance", {
     description: "Diagnose dropped frames, render lag, encoding lag, and stream congestion.",
