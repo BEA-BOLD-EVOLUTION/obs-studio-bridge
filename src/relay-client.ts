@@ -120,7 +120,7 @@ async function connectLoop(): Promise<void> {
   const state = await ensureDeviceState();
   while (!stopped) {
     await new Promise<void>((resolve) => {
-      socket = new WebSocket(websocketUrl(state));
+      socket = new WebSocket(websocketUrl(state), { maxPayload: 1024 * 1024 });
       socket.on("open", () => console.log("OBS Creator Assistant connected to hosted relay."));
       socket.on("message", async raw => {
         let message: any;

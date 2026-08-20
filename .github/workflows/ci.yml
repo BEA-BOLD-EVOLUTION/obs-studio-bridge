@@ -7,12 +7,22 @@ on:
     branches: [main]
 
 jobs:
-  typecheck:
+  quality-and-security:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - run: npm run check
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm run audit
+      - run: npm ci --ignore-scripts
+        working-directory: relay
+      - run: npm run audit
+        working-directory: relay
+      - run: npm ci --ignore-scripts
+        working-directory: oauth-ui
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: oauth-ui

@@ -212,7 +212,7 @@ const httpServer = app.listen(port, "0.0.0.0", () => {
   console.log(`OBS Creator Assistant relay listening on ${port}`);
 });
 
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
 
 httpServer.on("upgrade", async (req, socket, head) => {
   try {
