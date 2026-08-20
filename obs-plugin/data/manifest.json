@@ -1,0 +1,16 @@
+{
+    "display_name": "OBS Creator Assistant",
+    "id": "com.boldevolution.obs-creator-assistant",
+    "version": "0.1.0",
+    "os_arch": "windows-x64",
+    "name": "obs-creator-assistant",
+    "description": "Connect OBS Studio to ChatGPT through OBS Creator Assistant.",
+    "long_description": "Adds a native OBS dock for connection status, setup, and desktop-helper lifecycle management while keeping authentication and cloud communication outside the OBS process.",
+    "urls": {
+        "repository": "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge",
+        "website": "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge",
+        "support": "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/issues"
+    },
+    "has_banner": false,
+    "has_icon": false
+}
