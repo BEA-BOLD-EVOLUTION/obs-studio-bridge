@@ -37,9 +37,9 @@ jobs:
         run: |
           Copy-Item product/obs-plugin/CMakeLists.txt template/CMakeLists.txt -Force
           Copy-Item product/obs-plugin/buildspec.json template/buildspec.json -Force
-          Remove-Item template/src -Recurse -Force
+          Remove-Item template/src/plugin-main.c -Force
           Remove-Item template/data -Recurse -Force
-          Copy-Item product/obs-plugin/src template/src -Recurse -Force
+          Copy-Item product/obs-plugin/src/* template/src -Recurse -Force
           Copy-Item product/obs-plugin/data template/data -Recurse -Force
           $presets = Get-Content template/CMakePresets.json -Raw
           $presets = $presets.Replace('"ENABLE_FRONTEND_API": false', '"ENABLE_FRONTEND_API": true')
