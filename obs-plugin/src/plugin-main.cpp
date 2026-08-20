@@ -6,7 +6,7 @@
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
-OBS_MODULE_AUTHOR("Bold Evolution")
+OBS_MODULE_AUTHOR("TPC Global LLC")
 
 namespace {
 constexpr auto DockId = "obs-creator-assistant-dock";
@@ -43,3 +43,4 @@ void obs_module_unload(void)
 	dock = nullptr;
 	obs_log(LOG_INFO, "native plugin unloaded");
 }
+

@@ -53,12 +53,6 @@ jobs:
           CI: "true"
         run: .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
 
-      - name: Add one-click installer
-        shell: pwsh
-        run: |
-          Copy-Item product/obs-plugin/installer/Setup.cmd template/release/RelWithDebInfo/Setup.cmd -Force
-          Copy-Item product/obs-plugin/installer/Install-OBS-Creator-Assistant.ps1 template/release/RelWithDebInfo/Install-OBS-Creator-Assistant.ps1 -Force
-
       - name: Upload native plugin
         uses: actions/upload-artifact@v7
         with:
