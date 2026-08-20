@@ -215,6 +215,22 @@ Phase 2 is the proposed roadmap, not functionality available in the current rele
 - Restore a known-good configuration after a failed setup or workflow.
 - Clearly preview and confirm high-impact configuration changes.
 
+### Dual-PC virtual-camera production
+
+Support creators who use one OBS computer for backgrounds and a second OBS computer for virtual-camera composition, overlays, and effects:
+
+- Name both computers and assign **Background** and **Camera/Compositor** roles.
+- Save the scenes, receiving source, overlays, effects, and final output as a reusable production preset.
+- Verify that both computers, both OBS instances, required scenes, and the receiving source are ready.
+- Coordinate scene changes on both computers in the correct order.
+- Inspect, start, and stop OBS Virtual Camera on the Camera/Compositor PC.
+- Monitor performance and output status on both computers.
+- Restore each computer's previous scene and affected state after a failure or when production ends.
+- Keep the video connection transport-independent so creators can use an existing capture card, NDI, OBS Teleport, SRT, or another configured OBS source.
+- Require explicit confirmation before starting or stopping a live output.
+
+See the complete [dual-PC production design and acceptance criteria](docs/PHASE_2_DUAL_PC_PRODUCTION.md).
+
 ### Multi-computer and team workflows
 
 - Name computers, select a default computer, and organize multiple OBS devices.
