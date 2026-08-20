@@ -181,7 +181,7 @@ OBS Creator Assistant does not currently:
 - WebSocket and HTTP payload sizes are capped.
 - Custom workflows accept only the documented action types.
 
-Anyone who obtains the bridge token and can reach the hosted connection can control the allowlisted OBS actions. Protect account access like a password.
+Anyone who gains access to your authenticated account, local bridge token, or device credentials may be able to control the allowlisted OBS actions. Protect those credentials like passwords.
 
 See the [privacy statement](PRIVACY.md) for the information transferred when the hosted connection is enabled.
 
