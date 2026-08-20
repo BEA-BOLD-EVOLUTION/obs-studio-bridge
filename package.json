@@ -2,6 +2,7 @@
   "name": "obs-studio-mcp-bridge",
   "version": "1.2.0",
   "private": true,
+  "packageManager": "pnpm@11.19.0",
   "type": "module",
   "description": "OBS Creator Assistant local companion and allowlisted OBS automation bridge.",
   "license": "MIT",
@@ -11,14 +12,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/bootstrap.js",
-    "check": "tsc -p tsconfig.json --noEmit"
+    "check": "tsc -p tsconfig.json --noEmit",
+    "audit": "pnpm audit --prod --audit-level=high"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
     "dotenv": "17.4.2",
     "express": "5.2.1",
     "obs-websocket-js": "5.0.8",
-    "ws": "8.18.3",
+    "ws": "8.21.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
