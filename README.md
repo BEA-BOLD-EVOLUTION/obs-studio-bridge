@@ -215,19 +215,23 @@ Phase 2 is the proposed roadmap, not functionality available in the current rele
 - Restore a known-good configuration after a failed setup or workflow.
 - Clearly preview and confirm high-impact configuration changes.
 
-### Dual-PC virtual-camera production
+### Dual-PC TikTok LIVE Studio production
 
-Support creators who use one OBS computer for backgrounds and a second OBS computer for virtual-camera composition, overlays, and effects:
+Support creators who use one OBS computer for backgrounds and a second OBS computer for camera composition, overlays, and effects, with the finished video delivered to TikTok LIVE Studio through OBS Virtual Camera:
 
 - Name both computers and assign **Background** and **Camera/Compositor** roles.
 - Save the scenes, receiving source, overlays, effects, and final output as a reusable production preset.
 - Verify that both computers, both OBS instances, required scenes, and the receiving source are ready.
 - Coordinate scene changes on both computers in the correct order.
 - Inspect, start, and stop OBS Virtual Camera on the Camera/Compositor PC.
-- Monitor performance and output status on both computers.
+- Use OBS Virtual Camera as a Camera source inside TikTok LIVE Studio.
+- Validate the OBS resolution, frame rate, and portrait or landscape framing before the creator goes live.
+- Keep TikTok's preview, audio test, LIVE settings, and final **Go LIVE** / **End LIVE** actions under creator control.
+- Monitor performance and output status on both OBS computers.
 - Restore each computer's previous scene and affected state after a failure or when production ends.
-- Keep the video connection transport-independent so creators can use an existing capture card, NDI, OBS Teleport, SRT, or another configured OBS source.
-- Require explicit confirmation before starting or stopping a live output.
+- Keep the inter-PC video connection transport-independent so creators can use an existing capture card, NDI, OBS Teleport, SRT, or another configured OBS source.
+- Require explicit confirmation before starting or stopping OBS Virtual Camera.
+- Never claim that TikTok is live merely because OBS Virtual Camera is active.
 
 See the complete [dual-PC production design and acceptance criteria](docs/PHASE_2_DUAL_PC_PRODUCTION.md).
 
