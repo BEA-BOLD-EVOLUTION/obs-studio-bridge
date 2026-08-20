@@ -21,12 +21,12 @@ jobs:
     runs-on: windows-2022
     steps:
       - name: Check out Creator Assistant
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: product
 
       - name: Check out official OBS plugin template
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: obsproject/obs-plugintemplate
           ref: 3e7d7ac3b5342cd7d9b88890b9c70b472d1520fc
@@ -60,8 +60,9 @@ jobs:
           Copy-Item product/obs-plugin/installer/Install-OBS-Creator-Assistant.ps1 template/release/RelWithDebInfo/Install-OBS-Creator-Assistant.ps1 -Force
 
       - name: Upload native plugin
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: obs-creator-assistant-windows-x64
           path: template/release/RelWithDebInfo/**
           if-no-files-found: error
+

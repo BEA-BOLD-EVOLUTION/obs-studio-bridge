@@ -18,7 +18,7 @@
 namespace {
 constexpr auto HealthUrl = "http://127.0.0.1:8787/health";
 constexpr auto OnboardingUrl = "http://127.0.0.1:8788/";
-constexpr auto DownloadUrl = "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases/latest";
+constexpr auto DownloadUrl = "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases/latest/download/OBS-Creator-Assistant-Setup.exe";
 }
 
 CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
@@ -34,7 +34,7 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 	title->setFont(titleFont);
 	layout->addWidget(title);
 
-	status_ = new QLabel(tr("Checking connection…"), this);
+	status_ = new QLabel(tr("Checking connectionâ€¦"), this);
 	auto statusFont = status_->font();
 	statusFont.setBold(true);
 	status_->setFont(statusFont);
@@ -105,7 +105,7 @@ void CreatorAssistantDock::showConnected(const QByteArray &payload)
 	const auto object = document.object();
 	const bool obsConnected = object.value(QStringLiteral("obsConnected")).toBool(false);
 
-	status_->setText(obsConnected ? tr("● Connected") : tr("● Assistant running"));
+	status_->setText(obsConnected ? tr("â— Connected") : tr("â— Assistant running"));
 	status_->setStyleSheet(QStringLiteral("color: #2ea043;"));
 	details_->setText(obsConnected ? tr("ChatGPT can reach this OBS computer.")
 				       : tr("Open OBS WebSocket settings to finish the local connection."));
@@ -117,13 +117,13 @@ void CreatorAssistantDock::showConnected(const QByteArray &payload)
 void CreatorAssistantDock::showDisconnected()
 {
 	const bool installed = QFileInfo::exists(assistantLauncher());
-	status_->setText(installed ? tr("● Assistant offline") : tr("● Setup required"));
+	status_->setText(installed ? tr("â— Assistant offline") : tr("â— Setup required"));
 	status_->setStyleSheet(QStringLiteral("color: #d29922;"));
 	details_->setText(installed ? tr("Start the Creator Assistant to reconnect ChatGPT.")
 				     : tr("Install the Creator Assistant desktop helper to connect this OBS computer."));
 	startButton_->setEnabled(installed);
 	openButton_->setEnabled(true);
-	openButton_->setText(installed ? tr("Open Setup") : tr("Get Desktop Helper"));
+	openButton_->setText(installed ? tr("Open Setup") : tr("Install Assistant"));
 }
 
 void CreatorAssistantDock::startAssistant()
@@ -138,7 +138,7 @@ void CreatorAssistantDock::startAssistant()
 				QStringList{QStringLiteral("/c"),
 					    QStringLiteral("\"%1\"").arg(QDir::toNativeSeparators(launcher))},
 				assistantRoot());
-	status_->setText(tr("Starting…"));
+	status_->setText(tr("Startingâ€¦"));
 	QTimer::singleShot(1500, this, [this] { refreshStatus(); });
 }
 
@@ -148,3 +148,4 @@ void CreatorAssistantDock::openAssistant()
 	QDesktopServices::openUrl(
 		QUrl(QString::fromLatin1(installed ? OnboardingUrl : DownloadUrl)));
 }
+

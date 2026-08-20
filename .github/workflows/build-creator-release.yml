@@ -1,72 +1,187 @@
-name: Build Creator Release
+name: Unified Windows Installer
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/build-creator-release.yml"
+      - "installer/windows/**"
+      - "obs-plugin/**"
+      - "src/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths:
+      - ".github/workflows/build-creator-release.yml"
+      - "installer/windows/**"
+      - "obs-plugin/**"
+      - "src/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+
+permissions:
+  contents: write
 
 jobs:
-  windows-release:
-    runs-on: windows-latest
+  windows-x64:
+    name: Build and verify one-click installer
+    runs-on: windows-2022
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Check out Creator Assistant
+        uses: actions/checkout@v7
         with:
-          node-version: 20
-          cache: npm
+          path: product
 
-      - name: Install dependencies
-        run: npm install
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
 
-      - name: Type check
-        run: npm run check
+      - name: Install and verify desktop helper
+        shell: pwsh
+        run: |
+          corepack enable
+          Set-Location product
+          pnpm install --frozen-lockfile
+          pnpm run check
+          pnpm run audit
+          pnpm run build
+          pnpm prune --prod
 
-      - name: Build bridge
-        run: npm run build
+      - name: Check out official OBS plugin template
+        uses: actions/checkout@v7
+        with:
+          repository: obsproject/obs-plugintemplate
+          ref: 3e7d7ac3b5342cd7d9b88890b9c70b472d1520fc
+          path: template
 
-      - name: Download portable Node runtime
+      - name: Prepare native OBS plugin build
+        shell: pwsh
+        run: |
+          Copy-Item product/obs-plugin/CMakeLists.txt template/CMakeLists.txt -Force
+          Copy-Item product/obs-plugin/buildspec.json template/buildspec.json -Force
+          Remove-Item template/src/plugin-main.c -Force
+          Remove-Item template/data -Recurse -Force
+          Copy-Item product/obs-plugin/src/* template/src -Recurse -Force
+          Copy-Item product/obs-plugin/data template/data -Recurse -Force
+          $presets = Get-Content template/CMakePresets.json -Raw
+          $presets = $presets.Replace('"ENABLE_FRONTEND_API": false', '"ENABLE_FRONTEND_API": true')
+          $presets = $presets.Replace('"ENABLE_QT": false', '"ENABLE_QT": true')
+          Set-Content template/CMakePresets.json $presets
+
+      - name: Build native OBS plugin
+        shell: pwsh
+        working-directory: template
+        env:
+          CI: "true"
+        run: .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
+
+      - name: Download portable Node.js runtime
         shell: pwsh
         run: |
           $nodeVersion = node --version
           $zipName = "node-$nodeVersion-win-x64.zip"
-          $url = "https://nodejs.org/dist/$nodeVersion/$zipName"
-          Invoke-WebRequest -Uri $url -OutFile node-runtime.zip
+          Invoke-WebRequest -Uri "https://nodejs.org/dist/$nodeVersion/$zipName" -OutFile node-runtime.zip
           Expand-Archive -Path node-runtime.zip -DestinationPath node-runtime
           $runtimeDir = Get-ChildItem node-runtime -Directory | Select-Object -First 1
-          New-Item -ItemType Directory -Path creator-release/runtime -Force | Out-Null
-          Copy-Item "$($runtimeDir.FullName)/node.exe" creator-release/runtime/node.exe
+          New-Item -ItemType Directory -Path release-payload/helper/runtime -Force | Out-Null
+          Copy-Item "$($runtimeDir.FullName)/node.exe" release-payload/helper/runtime/node.exe
 
-      - name: Assemble creator package
+      - name: Assemble unified installer payload
         shell: pwsh
         env:
           CHATGPT_PLUGIN_URL: ${{ vars.CHATGPT_PLUGIN_URL }}
         run: |
-          Copy-Item dist creator-release/dist -Recurse
-          Copy-Item node_modules creator-release/node_modules -Recurse
-          Copy-Item installer/install-creator.ps1 creator-release/install-creator.ps1
-          Copy-Item installer/Setup.cmd creator-release/Setup.cmd
-          Copy-Item installer/creator-setup.html creator-release/creator-setup.html
-          Copy-Item package.json creator-release/package.json
-          Copy-Item .env.example creator-release/.env.example
-          Copy-Item start-bridge.ps1 creator-release/start-bridge.ps1
-          Copy-Item update-bridge.ps1 creator-release/update-bridge.ps1
+          New-Item -ItemType Directory -Path release-payload/helper -Force | Out-Null
+          New-Item -ItemType Directory -Path release-payload/plugin -Force | Out-Null
+          Copy-Item product/dist release-payload/helper/dist -Recurse
+          Copy-Item product/node_modules release-payload/helper/node_modules -Recurse
+          Copy-Item product/package.json release-payload/helper/package.json
+          Copy-Item product/.env.example release-payload/helper/.env.example
+          Copy-Item 'product/installer/windows/Initialize-Configuration.ps1' release-payload/helper/Initialize-Configuration.ps1
+          Copy-Item 'product/installer/windows/Stop-OBS-Creator-Assistant.ps1' release-payload/helper/Stop-OBS-Creator-Assistant.ps1
+          Copy-Item 'product/installer/windows/OBS Creator Assistant.cmd' 'release-payload/helper/OBS Creator Assistant.cmd'
+          Copy-Item 'product/installer/windows/Launch-OBS-Creator-Assistant.vbs' release-payload/helper/Launch-OBS-Creator-Assistant.vbs
           if ($env:CHATGPT_PLUGIN_URL) {
-            (Get-Content creator-release/.env.example -Raw).Replace('CHATGPT_PLUGIN_URL=', "CHATGPT_PLUGIN_URL=$env:CHATGPT_PLUGIN_URL") | Set-Content creator-release/.env.example -Encoding UTF8
+            (Get-Content release-payload/helper/.env.example -Raw).Replace('CHATGPT_PLUGIN_URL=', "CHATGPT_PLUGIN_URL=$env:CHATGPT_PLUGIN_URL") |
+              Set-Content release-payload/helper/.env.example -Encoding UTF8
           }
-          Compress-Archive -Path creator-release/* -DestinationPath OBS-Creator-Assistant-Windows.zip -Force
+          $pluginDll = Get-ChildItem template/release/RelWithDebInfo -Filter obs-creator-assistant.dll -File -Recurse | Select-Object -First 1
+          if (-not $pluginDll) { throw 'Native plugin DLL was not produced.' }
+          Copy-Item $pluginDll.FullName release-payload/plugin/obs-creator-assistant.dll
+          Copy-Item product/obs-plugin/data/locale/en-US.ini release-payload/plugin/en-US.ini
+          Copy-Item product/obs-plugin/data/manifest.json release-payload/plugin/manifest.json
 
-      - name: Upload Windows creator package
-        uses: actions/upload-artifact@v4
-        with:
-          name: OBS-Creator-Assistant-Windows
-          path: OBS-Creator-Assistant-Windows.zip
+      - name: Validate payload
+        shell: pwsh
+        run: |
+          $required = @(
+            'release-payload/helper/runtime/node.exe',
+            'release-payload/helper/dist/bootstrap.js',
+            'release-payload/helper/Initialize-Configuration.ps1',
+            'release-payload/helper/Stop-OBS-Creator-Assistant.ps1',
+            'release-payload/helper/OBS Creator Assistant.cmd',
+            'release-payload/plugin/obs-creator-assistant.dll',
+            'release-payload/plugin/manifest.json'
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path -LiteralPath $path)) { throw "Missing installer payload: $path" }
+          }
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'release-payload/helper/Initialize-Configuration.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) { throw ($errors | Out-String) }
 
-      - name: Publish tagged release asset
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+      - name: Build one-click installer
+        shell: pwsh
+        run: |
+          $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1
+          if (-not $iscc) {
+            $candidate = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+            if (Test-Path -LiteralPath $candidate) { $iscc = $candidate }
+          }
+          if (-not $iscc) { throw 'Inno Setup compiler is not installed on the Windows runner.' }
+          $version = (Get-Content product/package.json -Raw | ConvertFrom-Json).version
+          $payload = (Resolve-Path release-payload).Path
+          $output = Join-Path $PWD 'release-output'
+          New-Item -ItemType Directory -Path $output -Force | Out-Null
+          & $iscc "/DPayloadRoot=$payload" "/DOutputDir=$output" "/DAppVersion=$version" 'product/installer/windows/OBS-Creator-Assistant.iss'
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE." }
+          $installer = Join-Path $output 'OBS-Creator-Assistant-Setup.exe'
+          if (-not (Test-Path -LiteralPath $installer)) { throw 'Installer executable was not produced.' }
+          Get-FileHash -LiteralPath $installer -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  OBS-Creator-Assistant-Setup.exe" } |
+            Set-Content release-output/OBS-Creator-Assistant-Setup.exe.sha256 -Encoding ASCII
+
+      - name: Upload verified installer
+        uses: actions/upload-artifact@v7
         with:
-          files: OBS-Creator-Assistant-Windows.zip
+          name: OBS-Creator-Assistant-Setup
+          path: |
+            release-output/OBS-Creator-Assistant-Setup.exe
+            release-output/OBS-Creator-Assistant-Setup.exe.sha256
+          if-no-files-found: error
+
+      - name: Publish permanent GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v1.3.0
+          target_commitish: ${{ github.sha }}
+          name: OBS Creator Assistant v1.3.0
+          body: |
+            One download installs both the native OBS plugin and the Creator Assistant desktop helper.
+
+            Close OBS, run `OBS-Creator-Assistant-Setup.exe`, and follow the installer. Existing connection settings are preserved during upgrades.
+          files: |
+            release-output/OBS-Creator-Assistant-Setup.exe
+            release-output/OBS-Creator-Assistant-Setup.exe.sha256
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          make_latest: true
+

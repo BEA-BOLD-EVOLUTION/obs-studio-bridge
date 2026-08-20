@@ -1,7 +1,7 @@
 {
     "display_name": "OBS Creator Assistant",
     "id": "com.boldevolution.obs-creator-assistant",
-    "version": "0.1.0",
+    "version": "1.3.0",
     "os_arch": "windows-x64",
     "name": "obs-creator-assistant",
     "description": "Connect OBS Studio to ChatGPT through OBS Creator Assistant.",
@@ -14,3 +14,4 @@
     "has_banner": false,
     "has_icon": false
 }
+
