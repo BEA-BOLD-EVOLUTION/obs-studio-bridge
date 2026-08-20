@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
+import { dispatchVirtualCameraCommand } from "./virtual-camera.js";
 
 function result(value) {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
@@ -73,6 +74,47 @@ export function createCreatorMcpServer({ accessToken, listDevices, dispatchComma
     inputSchema: { deviceId: z.string().uuid().optional(), sceneName: z.string().min(1) },
     annotations: { ...write, idempotentHint: true }
   }, async ({ deviceId, sceneName }) => result(await dispatchCommand(accessToken, deviceId, { tool: "obs_switch_scene", arguments: { sceneName } })));
+
+  server.registerTool("obs_get_virtual_camera_status", {
+    description: "Use this to check whether OBS Virtual Camera is available and active on the selected computer before preparing TikTok LIVE Studio.",
+    inputSchema: { deviceId: z.string().uuid().optional() },
+    annotations: readOnly
+  }, async ({ deviceId }) => result(await dispatchVirtualCameraCommand({
+    dispatchCommand,
+    accessToken,
+    deviceId,
+    action: "inspect"
+  })));
+
+  server.registerTool("obs_start_virtual_camera", {
+    description: "Start OBS Virtual Camera only after the creator explicitly confirms. This prepares the video feed for TikTok LIVE Studio but does not start a TikTok LIVE.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      confirmed: z.literal(true).describe("Must be true only after the creator explicitly confirms starting OBS Virtual Camera.")
+    },
+    annotations: { ...write, idempotentHint: true }
+  }, async ({ deviceId, confirmed }) => result(await dispatchVirtualCameraCommand({
+    dispatchCommand,
+    accessToken,
+    deviceId,
+    action: "start",
+    confirmed
+  })));
+
+  server.registerTool("obs_stop_virtual_camera", {
+    description: "Stop OBS Virtual Camera only after the creator explicitly confirms TikTok LIVE Studio no longer needs the feed. This does not end a TikTok LIVE.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      confirmed: z.literal(true).describe("Must be true only after the creator explicitly confirms stopping OBS Virtual Camera.")
+    },
+    annotations: { ...write, idempotentHint: true }
+  }, async ({ deviceId, confirmed }) => result(await dispatchVirtualCameraCommand({
+    dispatchCommand,
+    accessToken,
+    deviceId,
+    action: "stop",
+    confirmed
+  })));
 
   server.registerTool("obs_run_ai_transition", {
     description: "Use this for the flagship three-part AI transition: transition-in video, featured AI video, transition-out video, then return to LIVE.",

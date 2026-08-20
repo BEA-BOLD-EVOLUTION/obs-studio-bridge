@@ -48,6 +48,30 @@
         "destructive_justification": "Scene switching is reversible and does not delete or overwrite OBS resources."
       }
     },
+    "obs_get_virtual_camera_status": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Only retrieves whether OBS Virtual Camera is available and active on the creator's selected computer.",
+        "open_world_justification": "Reads private local OBS output state and does not publish content or change TikTok LIVE Studio.",
+        "destructive_justification": "Does not change OBS Virtual Camera or any live output."
+      }
+    },
+    "obs_start_virtual_camera": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Starts OBS Virtual Camera only after explicit creator confirmation so TikTok LIVE Studio can receive the composed OBS video.",
+        "open_world_justification": "Changes a private local OBS output and does not start a TikTok LIVE or publish to the internet.",
+        "destructive_justification": "The action is reversible and does not delete scenes, sources, media, or account data."
+      }
+    },
+    "obs_stop_virtual_camera": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Stops OBS Virtual Camera only after explicit creator confirmation that TikTok LIVE Studio no longer needs the feed.",
+        "open_world_justification": "Changes a private local OBS output and does not end or otherwise control a TikTok LIVE.",
+        "destructive_justification": "The action is reversible and does not delete scenes, sources, media, or account data."
+      }
+    },
     "obs_run_ai_transition": {
       "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
@@ -96,6 +120,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "obs_switch_scene",
       "expected_output": "Switches the creator's OBS program scene to Battle and confirms the change.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Check and prepare OBS Virtual Camera for use as the camera source in TikTok LIVE Studio.",
+      "user_prompt": "Check my OBS virtual camera, then ask me before starting it for TikTok LIVE Studio.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_get_virtual_camera_status, obs_start_virtual_camera",
+      "expected_output": "Reports the current OBS Virtual Camera state, requests explicit confirmation before starting it, and clearly states that starting the virtual camera does not start a TikTok LIVE.",
       "expected_output_url": null
     },
     {

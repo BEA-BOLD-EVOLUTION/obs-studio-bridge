@@ -6,6 +6,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { OBSWebSocket } from "obs-websocket-js";
 import { z } from "zod";
+import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
 import { registerWorkflowTools } from "./workflows.js";
 
 const host = "127.0.0.1";
@@ -89,7 +90,8 @@ function createMcpServer(): McpServer {
     version: await obsCall("GetVersion"),
     stream: await obsCall("GetStreamStatus"),
     recording: await obsCall("GetRecordStatus"),
-    replayBuffer: await optionalObsCall("GetReplayBufferStatus")
+    replayBuffer: await optionalObsCall("GetReplayBufferStatus"),
+    virtualCamera: await optionalObsCall("GetVirtualCamStatus")
   }));
 
   server.registerTool("obs_list_scenes", {
@@ -159,6 +161,24 @@ function createMcpServer(): McpServer {
     if (findings.length === 0) findings.push("No material render, encoding, or congestion issue is visible in the current snapshot.");
     return result({ renderLagPercent, encodingLagPercent, congestionPercent, findings, stats, stream });
   });
+
+  server.registerTool("obs_get_virtual_camera_status", {
+    description: "Inspect whether OBS Virtual Camera is available and active. Use this before preparing TikTok LIVE Studio.",
+    inputSchema: {},
+    annotations: readOnlyAnnotations
+  }, async () => result(await inspectVirtualCamera(obsCall)));
+
+  server.registerTool("obs_start_virtual_camera", {
+    description: "Start OBS Virtual Camera after the creator explicitly confirms. This prepares the OBS video feed but does not start a TikTok LIVE.",
+    inputSchema: {},
+    annotations: writeAnnotations
+  }, async () => result(await setVirtualCameraActive(obsCall, true)));
+
+  server.registerTool("obs_stop_virtual_camera", {
+    description: "Stop OBS Virtual Camera after the creator explicitly confirms that TikTok LIVE Studio no longer needs the feed. This does not end a TikTok LIVE.",
+    inputSchema: {},
+    annotations: writeAnnotations
+  }, async () => result(await setVirtualCameraActive(obsCall, false)));
 
   server.registerTool("obs_switch_scene", {
     description: "Switch the current OBS program scene.",
