@@ -2,11 +2,24 @@
 
 OBS Creator Assistant connects OBS Studio to ChatGPT through a secure local companion and a native OBS dock.
 
+## Release status
+
+The Windows installer is temporarily unavailable. The unsigned v1.3.0 installer was withdrawn after antivirus warnings.
+
+The project has applied to the SignPath Foundation open-source program. Approval is pending. Until approval and signing verification are complete, unsigned installers will not be published.
+
+If the application is accepted, future Windows releases will:
+
+- Be built from this public repository by GitHub Actions.
+- Require manual signing approval.
+- Be signed by SignPath Foundation.
+- Include a SHA-256 checksum and a link to the source commit.
+
+Do not download installers from mirrors or third-party sites. There is currently no approved Windows installer.
+
 ## Install on Windows
 
-Public Windows installer downloads are temporarily paused while the project completes independent open-source code-signing review. Do not download the retired v1.3.0 installer from mirrors or third-party sites.
-
-After signing approval:
+These instructions will apply after an approved, signed release is published:
 
 1. Download **OBS-Creator-Assistant-Setup.exe** only from the [official releases page](https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases).
 2. Close OBS Studio.
@@ -49,9 +62,9 @@ See the [privacy statement](PRIVACY.md) for the information transferred when the
 
 ## Code signing policy
 
-Windows releases are built from this public repository and require manual approval before signing. Unsigned installers are never published as releases.
+The project has applied for free open-source code signing through SignPath. Approval is pending. Until approval and signing verification are complete, unsigned installers are not published.
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+If accepted, code signing will be provided by [SignPath.io](https://about.signpath.io/) with a certificate issued by [SignPath Foundation](https://signpath.org/).
 
 See the full [code signing policy](CODE_SIGNING_POLICY.md), including team roles and verification requirements.
 
@@ -67,5 +80,4 @@ pnpm run build
 pnpm start
 ```
 
-End users should install the latest Windows release instead of building from source.
-
+End users should wait for an approved, signed Windows release rather than installing CI artifacts or unsigned packages.
