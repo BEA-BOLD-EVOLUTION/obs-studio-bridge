@@ -34,7 +34,7 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 	title->setFont(titleFont);
 	layout->addWidget(title);
 
-	status_ = new QLabel(tr("Checking connectionâ€¦"), this);
+	status_ = new QLabel(tr("Checking connection…"), this);
 	auto statusFont = status_->font();
 	statusFont.setBold(true);
 	status_->setFont(statusFont);
@@ -79,7 +79,7 @@ QString CreatorAssistantDock::assistantRoot() const
 
 QString CreatorAssistantDock::assistantLauncher() const
 {
-	return QDir(assistantRoot()).filePath(QStringLiteral("OBS Creator Assistant.cmd"));
+	return QDir(assistantRoot()).filePath(QStringLiteral("OBS-Creator-Assistant.exe"));
 }
 
 void CreatorAssistantDock::refreshStatus()
@@ -105,7 +105,7 @@ void CreatorAssistantDock::showConnected(const QByteArray &payload)
 	const auto object = document.object();
 	const bool obsConnected = object.value(QStringLiteral("obsConnected")).toBool(false);
 
-	status_->setText(obsConnected ? tr("â— Connected") : tr("â— Assistant running"));
+	status_->setText(obsConnected ? tr("● Connected") : tr("● Assistant running"));
 	status_->setStyleSheet(QStringLiteral("color: #2ea043;"));
 	details_->setText(obsConnected ? tr("ChatGPT can reach this OBS computer.")
 				       : tr("Open OBS WebSocket settings to finish the local connection."));
@@ -117,7 +117,7 @@ void CreatorAssistantDock::showConnected(const QByteArray &payload)
 void CreatorAssistantDock::showDisconnected()
 {
 	const bool installed = QFileInfo::exists(assistantLauncher());
-	status_->setText(installed ? tr("â— Assistant offline") : tr("â— Setup required"));
+	status_->setText(installed ? tr("● Assistant offline") : tr("● Setup required"));
 	status_->setStyleSheet(QStringLiteral("color: #d29922;"));
 	details_->setText(installed ? tr("Start the Creator Assistant to reconnect ChatGPT.")
 				     : tr("Install the Creator Assistant desktop helper to connect this OBS computer."));
@@ -134,11 +134,8 @@ void CreatorAssistantDock::startAssistant()
 		return;
 	}
 
-	QProcess::startDetached(QStringLiteral("cmd.exe"),
-				QStringList{QStringLiteral("/c"),
-					    QStringLiteral("\"%1\"").arg(QDir::toNativeSeparators(launcher))},
-				assistantRoot());
-	status_->setText(tr("Startingâ€¦"));
+	QProcess::startDetached(launcher, {}, assistantRoot());
+	status_->setText(tr("Starting…"));
 	QTimer::singleShot(1500, this, [this] { refreshStatus(); });
 }
 
