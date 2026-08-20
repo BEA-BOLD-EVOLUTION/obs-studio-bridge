@@ -163,6 +163,74 @@ OBS Creator Assistant does not currently:
 - Send the OBS WebSocket password to ChatGPT or the hosted relay.
 - Expose local-only output controls through the current hosted ChatGPT allowlist.
 
+## Phase 2 — Planned features
+
+Phase 2 is the proposed roadmap, not functionality available in the current release. Scope and order may change based on user feedback, security review, OBS compatibility, and code-signing approval.
+
+### Safer remote production controls
+
+- Start and stop streaming from ChatGPT with an explicit confirmation step.
+- Start and stop recording from ChatGPT.
+- Start the replay buffer and save replays from ChatGPT.
+- Add preflight checks before going live, including OBS connection, output state, encoder health, and scene readiness.
+- Add guardrails that prevent accidental duplicate starts, stops, or scene changes.
+
+### Scene and source management
+
+- Create, duplicate, rename, reorder, and remove scenes.
+- Create and configure supported source types.
+- Change the display or window targeted by a capture source.
+- Move, resize, crop, align, and layer scene items.
+- Copy sources and layouts between scenes.
+- Save and restore scene-layout snapshots.
+
+### Advanced audio control
+
+- Display live audio levels and clipping warnings.
+- Control audio monitoring, sync offsets, and track assignments.
+- Add and configure supported audio filters.
+- Save reusable audio presets.
+- Run microphone and desktop-audio readiness checks.
+
+### Reusable automation
+
+- Save custom workflows instead of submitting every step each time.
+- Create workflow templates for starting a show, taking a break, sharing a screen, playing media, and ending a broadcast.
+- Add conditional steps, retries, timeouts, and recovery actions.
+- Preview and validate a workflow before it changes OBS.
+- Add a visual workflow builder for non-technical creators.
+
+### Monitoring and troubleshooting
+
+- Continuously monitor dropped frames, render lag, encoding lag, CPU load, memory use, and network congestion.
+- Notify the creator when performance crosses configurable thresholds.
+- Compare current settings with available hardware and intended streaming targets.
+- Generate a pre-show readiness report.
+- Keep a local diagnostic history that can be exported for support.
+
+### Profiles, scene collections, and backups
+
+- Inspect and switch OBS profiles and scene collections.
+- Back up supported OBS configuration before major changes.
+- Restore a known-good configuration after a failed setup or workflow.
+- Clearly preview and confirm high-impact configuration changes.
+
+### Multi-computer and team workflows
+
+- Name computers, select a default computer, and organize multiple OBS devices.
+- Show device health and version information in one view.
+- Add optional team roles and permissions without weakening account isolation.
+- Maintain an audit history of remote actions.
+
+### Installation and updates
+
+- Publish only signed Windows installers after signing approval.
+- Provide signed update notifications and checksum verification.
+- Support a trusted OBS plugin distribution or plugin-manager flow where technically available.
+- Make upgrades preserve pairing, OBS connection settings, and creator workflows.
+
+Phase 2 remote actions will remain allowlisted. Features that can interrupt or publish a live production will require clear user confirmation, account authorization, and auditable execution.
+
 ## If setup needs attention
 
 - In OBS, open **Docks → OBS Creator Assistant**.
