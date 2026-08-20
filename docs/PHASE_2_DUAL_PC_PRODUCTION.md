@@ -1,19 +1,40 @@
-# Phase 2: Dual-PC Production Mode
+# Phase 2: Dual-PC TikTok LIVE Studio Production
 
 ## User case
 
 A creator runs OBS Studio on two computers:
 
 - **Background PC:** produces backgrounds, virtual sets, or other visual media.
-- **Camera PC:** receives the background feed, adds the creator's virtual camera, overlays, and effects, and produces the final virtual-camera output.
+- **Camera/Compositor PC:** receives the background feed, adds the creator's camera, overlays, and effects in OBS, and sends the finished video to TikTok LIVE Studio through OBS Virtual Camera.
 
 The creator should be able to pair both computers to one OBS Creator Assistant account and control the combined production from ChatGPT without confusing which computer performs each action.
 
 ## Scope
 
-OBS Creator Assistant coordinates OBS on both computers. It does not transport video between them.
+OBS Creator Assistant coordinates OBS on both computers. It does not transport video between them and does not automate TikTok LIVE Studio through simulated mouse clicks or keystrokes.
 
 The creator may use any separately configured transport supported by their setup, such as a capture card, NDI, OBS Teleport, SRT, or another existing OBS source. Phase 2 detects and validates the named source but does not install third-party transport plugins or automatically configure the network video path.
+
+## TikTok LIVE Studio compatibility contract
+
+TikTok LIVE Studio runs on the Camera/Compositor PC and uses **OBS Virtual Camera** as a Camera source. TikTok's official documentation supports selecting connected cameras and confirms that a third-party virtual camera can be selected in LIVE Studio.
+
+OBS Creator Assistant controls the two OBS instances and OBS Virtual Camera. TikTok LIVE Studio remains responsible for:
+
+- The TikTok account and LIVE eligibility.
+- LIVE title, topic, cover, audience settings, and moderation.
+- The final preview and **Go LIVE** / **End LIVE** actions.
+- TikTok scenes, widgets, gifts, chat, co-hosting, and analytics.
+- Microphone and other audio-device selection.
+
+OBS Virtual Camera is treated as the video handoff. Audio must be configured and tested separately in TikTok LIVE Studio using the intended microphone or virtual audio device.
+
+Official references:
+
+- [TikTok LIVE Studio: Add a camera source](https://www.tiktok.com/live/studio/help/article/Get-started-with-your-first-LIVE/Add-a-camera-source-to-let-viewers-know-you)
+- [TikTok LIVE Studio: Third-party virtual cameras are supported](https://www.tiktok.com/live/studio/help/article/Gaming-Co-host/Gaming-Co-host)
+- [TikTok LIVE Studio: Preview video and test audio](https://www.tiktok.com/live/studio/help/article/Get-started-with-your-first-LIVE/Preview-your-video-and-audio?lang=en)
+- [OBS Virtual Camera Guide](https://obsproject.com/kb/virtual-camera-guide)
 
 ## Proposed production flow
 
@@ -23,8 +44,10 @@ flowchart LR
     R["Secure relay"]
     B["Background PC<br/>OBS"]
     T["Existing video transport<br/>Capture card / NDI / Teleport / SRT"]
-    V["Camera PC<br/>OBS + overlays + effects"]
-    O["OBS Virtual Camera<br/>or final production output"]
+    V["Camera/Compositor PC<br/>OBS + camera + overlays + effects"]
+    O["OBS Virtual Camera"]
+    L["TikTok LIVE Studio<br/>Camera source: OBS Virtual Camera"]
+    K["TikTok LIVE"]
 
     C --> R
     R --> B
@@ -32,6 +55,8 @@ flowchart LR
     B --> T
     T --> V
     V --> O
+    O --> L
+    L --> K
 ```
 
 ## Creator experience
@@ -44,8 +69,11 @@ flowchart LR
 4. Assign the **Camera/Compositor** role to the other.
 5. Select the background scene on the Background PC.
 6. Select the receiving source and composite scene on the Camera PC.
-7. Select whether the final output is OBS Virtual Camera, recording, or streaming.
-8. Save the setup as a reusable production preset.
+7. Confirm that OBS Virtual Camera is installed and available on the Camera/Compositor PC.
+8. In TikTok LIVE Studio, add or edit a Camera source and select **OBS Virtual Camera**.
+9. Match the OBS output resolution and frame rate to the intended TikTok LIVE Studio layout.
+10. Configure and test the microphone or virtual audio device separately in TikTok LIVE Studio.
+11. Save the setup as a reusable TikTok production preset.
 
 ### Start production
 
@@ -62,8 +90,12 @@ OBS Creator Assistant will:
 5. Switch the Background PC to the selected background scene.
 6. Verify that the Camera PC's receiving source is enabled.
 7. Switch the Camera PC to the composite scene containing the virtual camera, overlays, and effects.
-8. Start OBS Virtual Camera on the Camera PC only after an explicit confirmation.
-9. Return a readiness summary for both computers.
+8. Start OBS Virtual Camera on the Camera/Compositor PC only after an explicit confirmation.
+9. Confirm that the virtual camera reports active.
+10. Remind the creator to verify the video preview and test audio in TikTok LIVE Studio.
+11. Return a readiness summary for both computers and a clear **Ready for TikTok preview** state.
+
+OBS Creator Assistant does not click TikTok's **Go LIVE** button. The creator reviews the TikTok preview and starts the LIVE from TikTok LIVE Studio.
 
 ### Change the production
 
@@ -85,11 +117,12 @@ The creator can say:
 
 OBS Creator Assistant will:
 
-1. Request confirmation before stopping a live virtual camera, recording, or stream.
-2. Stop the configured final output.
-3. Restore the previous Camera PC scene and affected source states.
-4. Restore the previous Background PC scene.
-5. Report any step that could not be restored.
+1. Remind the creator to end the LIVE in TikTok LIVE Studio first if it is still live.
+2. Request confirmation before stopping OBS Virtual Camera.
+3. Stop OBS Virtual Camera on the Camera/Compositor PC.
+4. Restore the previous Camera/Compositor PC scene and affected source states.
+5. Restore the previous Background PC scene.
+6. Report any step that could not be restored.
 
 ## Required Phase 2 capabilities
 
@@ -156,7 +189,9 @@ Stores:
 - Camera/compositor device ID and scene name.
 - Receiving source name.
 - Optional overlay and camera source names.
-- Final output type.
+- Final output type, including `tiktok_live_studio_virtual_camera`.
+- Expected OBS video resolution and frame rate.
+- Acknowledgement that TikTok audio is configured separately.
 
 ### `obs_inspect_dual_pc_readiness`
 
@@ -181,6 +216,9 @@ Stops the configured output after confirmation and restores captured state where
 | Either computer is offline before startup | Make no changes and identify the unavailable role. |
 | Background PC fails after its scene changes | Restore its prior scene when possible; do not start the Camera PC output. |
 | Camera PC receiving source is missing | Do not start Virtual Camera; keep the Background PC safe and restore changed state. |
+| OBS Virtual Camera is unavailable | Do not report TikTok readiness; provide the OBS Virtual Camera troubleshooting path. |
+| TikTok LIVE Studio does not show OBS Virtual Camera | Keep OBS prepared, but do not claim the setup is ready; instruct the creator to refresh or re-add the Camera source. |
+| Video is present but audio is missing | Do not change OBS video routing; direct the creator to the separate TikTok LIVE Studio audio test. |
 | Camera PC disconnects during production | Warn immediately; do not issue commands to the wrong or replacement device. |
 | A restore step fails | Report the exact device and state requiring manual attention. |
 | Relay times out | Mark the result unknown and re-inspect state before retrying. |
@@ -213,6 +251,11 @@ Phase 2 supports this user case when:
 - The creator receives a per-device result for success, failure, timeout, and restoration.
 - Stopping the production restores the prior scene state where possible.
 - The video transport remains creator-selectable and independent of the coordination layer.
+- TikTok LIVE Studio on the Camera/Compositor PC can select OBS Virtual Camera as its Camera source.
+- The readiness result distinguishes **OBS ready** from **Ready for TikTok preview**.
+- The creator can verify portrait or landscape framing before going live.
+- Audio readiness is tested separately in TikTok LIVE Studio.
+- OBS Creator Assistant never claims it started or ended a TikTok LIVE when it only controlled OBS Virtual Camera.
 
 ## Trade-offs and future review
 
