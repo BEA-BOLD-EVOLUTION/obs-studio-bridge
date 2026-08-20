@@ -41,6 +41,10 @@ jobs:
           Remove-Item template/data -Recurse -Force
           Copy-Item product/obs-plugin/src template/src -Recurse -Force
           Copy-Item product/obs-plugin/data template/data -Recurse -Force
+          $presets = Get-Content template/CMakePresets.json -Raw
+          $presets = $presets.Replace('"ENABLE_FRONTEND_API": false', '"ENABLE_FRONTEND_API": true')
+          $presets = $presets.Replace('"ENABLE_QT": false', '"ENABLE_QT": true')
+          Set-Content template/CMakePresets.json $presets
 
       - name: Build native plugin
         shell: pwsh

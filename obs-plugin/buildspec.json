@@ -28,9 +28,15 @@
             }
         }
     },
+    "platformConfig": {
+        "macos": {
+            "bundleId": "com.boldevolution.obs-creator-assistant"
+        }
+    },
     "name": "obs-creator-assistant",
     "displayName": "OBS Creator Assistant",
     "version": "0.1.0",
     "author": "Bold Evolution",
-    "website": "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge"
+    "website": "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge",
+    "email": "229179614+BEA-BOLD-EVOLUTION@users.noreply.github.com"
 }
