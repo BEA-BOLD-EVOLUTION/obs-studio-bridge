@@ -56,10 +56,12 @@ const consent = document.getElementById('consent');
 const confirmEmail = document.getElementById('confirmEmail');
 const confirmWrap = document.getElementById('confirmWrap');
 const message = document.getElementById('message');
-const submitAuth = document.getElementById('submitAuth');
-const password = document.getElementById('password');
-let mode = 'signin';
-let busy = false;
+  const submitAuth = document.getElementById('submitAuth');
+  const password = document.getElementById('password');
+  let mode = 'signin';
+  let busy = false;
+  let loadingAuthorization = false;
+  let authorizationHandled = false;
 function show(text, kind=''){ message.className=kind; message.textContent=text; }
 function setBusy(value){busy=value;submitAuth.disabled=value;document.getElementById('confirmed').disabled=value;}
 function setMode(next){
@@ -73,15 +75,32 @@ function setMode(next){
   document.getElementById('confirmPassword').required=signingUp;
 }
 async function load(){
+  if(loadingAuthorization||authorizationHandled)return;
   if(!authorizationId){ show('Open this page from the ChatGPT connection flow.','error'); return; }
-  const { data:{ session } } = await supabase.auth.getSession();
-  if(!session){ auth.classList.remove('hidden'); consent.classList.add('hidden'); return; }
-  auth.classList.add('hidden');confirmEmail.classList.add('hidden');consent.classList.remove('hidden');show('');
-  const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
-  if(error){ show(error.message,'error'); return; }
-  document.getElementById('clientName').textContent = data?.client?.name || data?.client_name || 'ChatGPT';
-  const scopes = data?.scope || '';
-  document.getElementById('scopeText').textContent = scopes ? 'is requesting: ' + scopes : 'is requesting access to your OBS Creator Assistant account.';
+  loadingAuthorization=true;
+  try{
+    const { data:{ session } } = await supabase.auth.getSession();
+    if(!session){ auth.classList.remove('hidden'); consent.classList.add('hidden'); return; }
+    auth.classList.add('hidden');confirmEmail.classList.add('hidden');consent.classList.add('hidden');show('Checking authorization...');
+    const { data, error } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+    if(error){
+      const expired=/no longer pending|cannot be processed|authorization not found/i.test(error.message||'');
+      show(expired?'This connection has expired. Close this page and reconnect from ChatGPT.':error.message,'error');
+      return;
+    }
+    if(data?.redirect_url&&!('authorization_id' in data)){
+      authorizationHandled=true;
+      show('Connected. Returning to ChatGPT...','ok');
+      location.replace(data.redirect_url);
+      return;
+    }
+    consent.classList.remove('hidden');show('');
+    document.getElementById('clientName').textContent = data?.client?.name || data?.client_name || 'ChatGPT';
+    const scopes = data?.scope || '';
+    document.getElementById('scopeText').textContent = scopes ? 'is requesting: ' + scopes : 'is requesting access to your OBS Creator Assistant account.';
+  }finally{
+    loadingAuthorization=false;
+  }
 }
 async function submit(){
   if(busy)return;
@@ -116,12 +135,16 @@ document.getElementById('confirmed').onclick=async()=>{
 };
 supabase.auth.onAuthStateChange((_event,session)=>{if(session)load();});
 document.getElementById('approve').onclick=async()=>{
+  if(authorizationHandled)return;
+  authorizationHandled=true;
   show('Connecting...'); const { data,error }=await supabase.auth.oauth.approveAuthorization(authorizationId);
-  if(error){show(error.message,'error');return;} location.href=data.redirect_url;
+  if(error){authorizationHandled=false;show(error.message,'error');return;} location.replace(data.redirect_url);
 };
 document.getElementById('deny').onclick=async()=>{
+  if(authorizationHandled)return;
+  authorizationHandled=true;
   const { data,error }=await supabase.auth.oauth.denyAuthorization(authorizationId);
-  if(error){show(error.message,'error');return;} location.href=data.redirect_url;
+  if(error){authorizationHandled=false;show(error.message,'error');return;} location.replace(data.redirect_url);
 };
 document.getElementById('signout').onclick=async()=>{await supabase.auth.signOut();location.reload();};
 setMode('signin');load().catch(e=>show(e.message,'error'));
