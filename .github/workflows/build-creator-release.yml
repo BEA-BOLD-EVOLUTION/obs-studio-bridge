@@ -48,6 +48,8 @@ jobs:
           pnpm run audit
           pnpm run build
           pnpm prune --prod
+          Get-ChildItem node_modules -Directory -Filter '.bin' -Recurse -Force |
+            Remove-Item -Recurse -Force
 
       - name: Check out official OBS plugin template
         uses: actions/checkout@v7
