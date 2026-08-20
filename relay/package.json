@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/server-v2.js",
+    "test": "node --test test/*.test.mjs",
     "audit": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {

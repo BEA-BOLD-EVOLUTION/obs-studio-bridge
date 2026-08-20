@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+test("ChatGPT submission metadata includes the Phase 2 virtual camera tools", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+
+  assert.ok(submission.tools.obs_get_virtual_camera_status);
+  assert.ok(submission.tools.obs_start_virtual_camera);
+  assert.ok(submission.tools.obs_stop_virtual_camera);
+  assert.equal(submission.tools.obs_get_virtual_camera_status.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.obs_start_virtual_camera.annotations.readOnlyHint, false);
+  assert.equal(submission.tools.obs_stop_virtual_camera.annotations.readOnlyHint, false);
+});

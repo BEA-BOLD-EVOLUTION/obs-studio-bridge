@@ -74,6 +74,23 @@ Example request:
 
 - “Switch OBS to the Battle scene.”
 
+#### Prepare OBS Virtual Camera for TikTok LIVE Studio
+
+- Check whether OBS Virtual Camera is available and active.
+- Start OBS Virtual Camera after explicit creator confirmation.
+- Stop OBS Virtual Camera after explicit creator confirmation.
+- Avoid accidental toggles by checking the current state before every start or stop request.
+- Verify the reported state after OBS accepts a change.
+- Clearly distinguish an active OBS Virtual Camera from an active TikTok LIVE.
+
+TikTok LIVE Studio must run on the same computer as the Camera/Compositor OBS instance and use **OBS Virtual Camera** as its Camera source. TikTok's preview, audio configuration, **Go LIVE**, and **End LIVE** controls remain in TikTok LIVE Studio.
+
+Example requests:
+
+- “Is my OBS virtual camera running?”
+- “Start OBS Virtual Camera for TikTok Studio.”
+- “I ended my TikTok LIVE; stop OBS Virtual Camera.”
+
 #### Run a three-part media transition
 
 - Switch to an existing media scene.
@@ -145,6 +162,7 @@ The localhost-only MCP bridge includes additional tools for local integrations a
 - Set an existing audio input volume between -100 dB and +26 dB.
 - Start or stop streaming.
 - Start or stop recording.
+- Inspect, start, or stop OBS Virtual Camera.
 - Save the current replay buffer.
 - Run the same media-transition, screen-sharing, and custom-workflow engines described above.
 
@@ -234,6 +252,8 @@ Support creators who use one OBS computer for backgrounds and a second OBS compu
 - Never claim that TikTok is live merely because OBS Virtual Camera is active.
 
 See the complete [dual-PC production design and acceptance criteria](docs/PHASE_2_DUAL_PC_PRODUCTION.md).
+
+See the [Phase 2 test plan](docs/PHASE_2_TEST_PLAN.md) for automated, Windows OBS, and TikTok LIVE Studio validation requirements.
 
 ### Multi-computer and team workflows
 

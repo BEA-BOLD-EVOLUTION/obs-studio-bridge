@@ -5,6 +5,7 @@ import http from "node:http";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import WebSocket from "ws";
+import { isRemoteToolAllowed } from "./remote-tools.js";
 
 const relayBaseUrl = (process.env.RELAY_URL?.trim() || "https://relay-production-bbb4.up.railway.app").replace(/\/$/, "");
 const bridgePort = Number.parseInt(process.env.BRIDGE_PORT || "8787", 10) || 8787;
@@ -12,15 +13,6 @@ const bridgeToken = process.env.BRIDGE_AUTH_TOKEN?.trim() || "";
 const chatgptPluginUrl = process.env.CHATGPT_PLUGIN_URL?.trim() || "";
 const onboardingPort = Number.parseInt(process.env.ONBOARDING_PORT || "8788", 10) || 8788;
 const deviceStatePath = path.join(process.cwd(), ".device.json");
-
-const allowedRemoteTools = new Set([
-  "obs_inspect_status",
-  "obs_list_scenes",
-  "obs_switch_scene",
-  "obs_run_ai_transition",
-  "obs_share_capture_source",
-  "obs_run_workflow"
-]);
 
 type DeviceState = {
   deviceId: string;
@@ -66,7 +58,7 @@ async function ensureDeviceState(): Promise<DeviceState> {
 }
 
 async function callLocalTool(tool: string, args: Record<string, unknown>): Promise<unknown> {
-  if (!allowedRemoteTools.has(tool)) throw new Error(`Remote tool '${tool}' is not allowlisted by the local companion.`);
+  if (!isRemoteToolAllowed(tool)) throw new Error(`Remote tool '${tool}' is not allowlisted by the local companion.`);
   if (!bridgeToken) throw new Error("Local bridge token is missing.");
 
   const client = new Client({ name: "obs-creator-assistant-relay-client", version: "1.0.0" });
