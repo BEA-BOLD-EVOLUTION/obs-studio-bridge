@@ -42,11 +42,12 @@ jobs:
         shell: pwsh
         run: |
           corepack enable
-          pnpm --dir product install --frozen-lockfile
-          pnpm --dir product run check
-          pnpm --dir product run audit
-          pnpm --dir product run build
-          pnpm --dir product prune --prod
+          Set-Location product
+          pnpm install --frozen-lockfile
+          pnpm run check
+          pnpm run audit
+          pnpm run build
+          pnpm prune --prod
 
       - name: Check out official OBS plugin template
         uses: actions/checkout@v7
