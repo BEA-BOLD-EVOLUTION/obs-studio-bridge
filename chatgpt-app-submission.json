@@ -91,9 +91,9 @@
     "obs_update_dual_pc_production": {
       "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
-        "read_only_justification": "After explicit confirmation, switches an existing scene or changes one existing source's visibility on the computer assigned to a selected role in an active creator-owned session.",
+        "read_only_justification": "After explicit confirmation, switches an existing scene, changes one existing source's visibility, or changes mute/volume on one existing OBS input on the computer assigned to a selected role in an active creator-owned session.",
         "open_world_justification": "Controls private OBS presentation state and does not operate TikTok LIVE Studio, start a TikTok LIVE, or publish content.",
-        "destructive_justification": "Captures prior state, avoids duplicate commands, attempts immediate compensation after failure, and does not create or delete OBS resources."
+        "destructive_justification": "Captures prior scene, source, mute, or bounded volume state; avoids duplicate commands; attempts immediate compensation after failure; and does not create or delete OBS resources."
       }
     },
     "obs_inspect_status": {
@@ -240,6 +240,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "obs_update_dual_pc_production",
       "expected_output": "Uses the active session's saved role-to-device mapping, requests explicit confirmation, captures prior state, changes only the selected role, never controls TikTok LIVE Studio, and reports whether compensation or manual attention was required.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Apply a confirmed role-specific mute or bounded volume change during an active dual-PC production.",
+      "user_prompt": "Lower Music on the Background computer to -12 dB, then mute Mic/Aux on the Camera computer after I confirm each change.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_update_dual_pc_production",
+      "expected_output": "Inspects the named existing OBS input on the selected session role, requests confirmation, captures prior mute or volume state, applies only the bounded OBS audio change, and explicitly leaves TikTok LIVE Studio audio under creator control.",
       "expected_output_url": null
     },
     {

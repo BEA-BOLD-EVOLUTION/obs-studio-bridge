@@ -39,6 +39,8 @@ This plan covers the Phase 2 path from ChatGPT through the hosted relay and loca
 - Verify role-specific updates select only the device ID stored for that role in the account-owned active session.
 - Verify scene and source-visibility updates capture prior state, avoid duplicate commands, and remain restorable in reverse order.
 - Verify a failed or uncertain update attempts immediate compensation and marks the session for manual attention when compensation cannot be confirmed.
+- Verify role-specific audio updates inspect one existing input, accept only mute or -100 dB to +26 dB volume targets, and never change TikTok LIVE Studio audio.
+- Verify mute and volume updates capture their prior values, avoid duplicates, compensate uncertain results, and remain restorable when production stops.
 
 ### CI checks
 

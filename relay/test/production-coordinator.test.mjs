@@ -143,6 +143,30 @@ test("a Virtual Camera that was already active is neither started nor stopped by
   assert.equal(h.commands.some(entry => entry.command.tool === "obs_stop_virtual_camera"), false);
 });
 
+test("stop restores role-specific volume and mute updates in reverse order", async () => {
+  const h = harness();
+  const stopped = await stopCoordinatedProduction({
+    accessToken: "owner-token",
+    confirmed: true,
+    session: {
+      id: "session-audio",
+      status: "active",
+      completedSteps: [
+        { id: "volume-step", type: "input_volume", deviceId: "background-pc", inputName: "Music", previousVolumeDb: -6, volumeDb: -12 },
+        { id: "mute-step", type: "input_mute", deviceId: "camera-pc", inputName: "Mic/Aux", previousMuted: false, muted: true }
+      ],
+      restorationSteps: []
+    },
+    dispatchCommand: h.dispatchCommand,
+    updateSession: h.updateSession
+  });
+  assert.equal(stopped.ok, true);
+  assert.deepEqual(h.commands.map(entry => [entry.deviceId, entry.command]), [
+    ["camera-pc", { tool: "obs_set_input_mute", arguments: { inputName: "Mic/Aux", muted: false } }],
+    ["background-pc", { tool: "obs_set_input_volume", arguments: { inputName: "Music", volumeDb: -6 } }]
+  ]);
+});
+
 test("restoration continues after one device fails and reports manual attention", async () => {
   const h = harness(({ deviceId }) => {
     if (deviceId === "camera-pc") throw new Error("camera disconnected");

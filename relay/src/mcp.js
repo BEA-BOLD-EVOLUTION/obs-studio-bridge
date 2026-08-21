@@ -145,14 +145,17 @@ export function createCreatorMcpServer({
   }, async ({ sessionId }) => result(await inspectDualPcSessionHealth(accessToken, sessionId)));
 
   server.registerTool("obs_update_dual_pc_production", {
-    description: "After explicit creator confirmation, change one role in an active dual-PC session by switching its OBS scene or changing one existing source's visibility. The role selects the session-owned computer; TikTok LIVE Studio is never controlled.",
+    description: "After explicit creator confirmation, change one role in an active dual-PC session by switching its OBS scene, changing one existing source's visibility, or changing mute/volume on one existing OBS audio input. The role selects the session-owned computer; TikTok LIVE Studio is never controlled.",
     inputSchema: {
       sessionId: z.string().uuid(),
       role: z.enum(["background", "camera_compositor"]),
-      action: z.enum(["switch_scene", "set_source_visibility"]),
-      sceneName: z.string().trim().min(1).max(120),
+      action: z.enum(["switch_scene", "set_source_visibility", "set_input_mute", "set_input_volume"]),
+      sceneName: z.string().trim().min(1).max(120).optional(),
       sourceName: z.string().trim().min(1).max(120).optional(),
       visible: z.boolean().optional(),
+      inputName: z.string().trim().min(1).max(120).optional(),
+      muted: z.boolean().optional(),
+      volumeDb: z.number().min(-100).max(26).optional(),
       confirmed: z.literal(true).describe("Must be true only after the creator confirms this role-specific OBS change during the active production.")
     },
     annotations: { ...write, idempotentHint: true }

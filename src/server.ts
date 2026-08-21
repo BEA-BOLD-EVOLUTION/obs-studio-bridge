@@ -6,6 +6,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { OBSWebSocket } from "obs-websocket-js";
 import { z } from "zod";
+import { inspectAudioInput, setAudioInputMuted, setAudioInputVolume } from "./audio-controls.js";
 import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
 import { inspectProductionResources } from "./production-readiness.js";
 import { setProgramScene, setSceneSourceVisibility } from "./scene-controls.js";
@@ -131,6 +132,12 @@ function createMcpServer(): McpServer {
     return result({ inputs: inputs.filter(Boolean) });
   });
 
+  server.registerTool("obs_inspect_audio_input", {
+    description: "Inspect mute and volume state for one existing OBS audio input.",
+    inputSchema: { inputName: z.string().min(1).max(120) },
+    annotations: readOnlyAnnotations
+  }, async ({ inputName }) => result(await inspectAudioInput(obsCall, inputName)));
+
   server.registerTool("obs_get_video_settings", {
     description: "Inspect OBS base/output resolution, frame rate, and video format settings.",
     inputSchema: {},
@@ -216,8 +223,7 @@ function createMcpServer(): McpServer {
     inputSchema: { inputName: z.string().min(1), muted: z.boolean() },
     annotations: writeAnnotations
   }, async ({ inputName, muted }) => {
-    await obsCall("SetInputMute", { inputName, inputMuted: muted });
-    return result({ ok: true, inputName, muted });
+    return result(await setAudioInputMuted(obsCall, inputName, muted));
   });
 
   server.registerTool("obs_set_input_volume", {
@@ -225,8 +231,7 @@ function createMcpServer(): McpServer {
     inputSchema: { inputName: z.string().min(1), volumeDb: z.number().min(-100).max(26) },
     annotations: writeAnnotations
   }, async ({ inputName, volumeDb }) => {
-    await obsCall("SetInputVolume", { inputName, inputVolumeDb: volumeDb });
-    return result({ ok: true, inputName, volumeDb });
+    return result(await setAudioInputVolume(obsCall, inputName, volumeDb));
   });
 
   registerOutputControl(server, "obs_start_streaming", "StartStream", "GetStreamStatus", true, "streaming");

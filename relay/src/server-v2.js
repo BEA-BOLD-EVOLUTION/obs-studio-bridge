@@ -270,6 +270,9 @@ async function updateDualPcProduction(accessToken, sessionId, input) {
     inspectTarget: async (deviceId, sceneName, sourceNames) => toolPayload(
       await dispatchCommand(accessToken, deviceId, inspectionCommand(sceneName, sourceNames))
     ),
+    inspectAudioInput: async (deviceId, inputName) => toolPayload(
+      await dispatchCommand(accessToken, deviceId, { tool: "obs_inspect_audio_input", arguments: { inputName } })
+    ),
     updateSession: (id, changes) => updateProductionSession(accessToken, id, changes)
   });
 }
