@@ -13,6 +13,7 @@ import {
 } from "./dual-pc.js";
 import { startCoordinatedProduction, stopCoordinatedProduction } from "./production-coordinator.js";
 import { inspectProductionHealth } from "./production-health.js";
+import { updateCoordinatedProduction } from "./production-update.js";
 
 const port = Number(process.env.PORT || 3000);
 const supabaseUrl = process.env.SUPABASE_URL || "";
@@ -259,6 +260,20 @@ async function inspectDualPcSessionHealth(accessToken, sessionId) {
   });
 }
 
+async function updateDualPcProduction(accessToken, sessionId, input) {
+  const session = await getProductionSession(accessToken, sessionId);
+  return updateCoordinatedProduction({
+    accessToken,
+    session,
+    ...input,
+    dispatchCommand,
+    inspectTarget: async (deviceId, sceneName, sourceNames) => toolPayload(
+      await dispatchCommand(accessToken, deviceId, inspectionCommand(sceneName, sourceNames))
+    ),
+    updateSession: (id, changes) => updateProductionSession(accessToken, id, changes)
+  });
+}
+
 async function getUnresolvedSessionForPreset(accessToken, presetId) {
   const client = userClient(accessToken);
   const { data, error } = await client.from("obs_dual_pc_sessions")
@@ -469,7 +484,8 @@ app.all("/mcp", requireUser, async (req, res) => {
     startDualPcProduction,
     stopDualPcProduction,
     listProductionSessions,
-    inspectDualPcSessionHealth
+    inspectDualPcSessionHealth,
+    updateDualPcProduction
   });
 });
 

@@ -36,6 +36,9 @@ This plan covers the Phase 2 path from ChatGPT through the hosted relay and loca
 - Verify a dual-PC health snapshot dispatches only read-only status and performance commands to the two session-owned computers.
 - Verify CPU, FPS, render-lag, encoding-lag, offline-device, and inactive-Virtual-Camera warnings remain separated by role.
 - Verify health results explicitly decline to claim that a transport-independent inter-PC video signal was validated.
+- Verify role-specific updates select only the device ID stored for that role in the account-owned active session.
+- Verify scene and source-visibility updates capture prior state, avoid duplicate commands, and remain restorable in reverse order.
+- Verify a failed or uncertain update attempts immediate compensation and marks the session for manual attention when compensation cannot be confirmed.
 
 ### CI checks
 

@@ -88,6 +88,14 @@
         "destructive_justification": "Dispatches only fixed read-only status and performance commands and does not modify production sessions or OBS resources."
       }
     },
+    "obs_update_dual_pc_production": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "After explicit confirmation, switches an existing scene or changes one existing source's visibility on the computer assigned to a selected role in an active creator-owned session.",
+        "open_world_justification": "Controls private OBS presentation state and does not operate TikTok LIVE Studio, start a TikTok LIVE, or publish content.",
+        "destructive_justification": "Captures prior state, avoids duplicate commands, attempts immediate compensation after failure, and does not create or delete OBS resources."
+      }
+    },
     "obs_inspect_status": {
       "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
@@ -224,6 +232,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "obs_inspect_dual_pc_session_health",
       "expected_output": "Returns separate connection, output, CPU, memory, FPS, render-lag, and encoding-lag results for both creator-owned computers without changing OBS or claiming the transport-independent video signal was verified.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Apply a role-specific scene or source-visibility change during an active dual-PC production.",
+      "user_prompt": "During Weekend LIVE, change the Background computer to Neon City after I confirm, then hide the Lower Third on the Camera computer after a separate confirmation.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_update_dual_pc_production",
+      "expected_output": "Uses the active session's saved role-to-device mapping, requests explicit confirmation, captures prior state, changes only the selected role, never controls TikTok LIVE Studio, and reports whether compensation or manual attention was required.",
       "expected_output_url": null
     },
     {

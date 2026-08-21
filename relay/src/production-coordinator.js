@@ -195,14 +195,15 @@ export function virtualCameraCommand(active) {
   return { tool: active ? "obs_start_virtual_camera" : "obs_stop_virtual_camera", arguments: {} };
 }
 
-function inverseCommand(step) {
+export function inverseCommand(step) {
   if (step.type === "background_scene" || step.type === "compositor_scene") return sceneCommand(step.previousSceneName);
   if (step.type === "source_visibility") return sourceVisibilityCommand(step.sceneName, step.sourceName, step.previousVisible);
   if (step.type === "virtual_camera") return virtualCameraCommand(step.previousActive);
   throw new Error(`Unsupported restoration step '${step.type}'.`);
 }
 
-function restorationKey(step) {
+export function restorationKey(step) {
+  if (step.id) return step.id;
   return [step.type, step.deviceId, step.sceneName, step.sourceName].filter(Boolean).join(":");
 }
 
