@@ -3,6 +3,7 @@ export const allowedRemoteTools = new Set([
   "obs_list_scenes",
   "obs_inspect_production_resources",
   "obs_switch_scene",
+  "obs_set_source_visibility",
   "obs_get_virtual_camera_status",
   "obs_start_virtual_camera",
   "obs_stop_virtual_camera",

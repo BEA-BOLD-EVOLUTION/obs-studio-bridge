@@ -56,6 +56,30 @@
         "destructive_justification": "Uses a fixed read-only local inspection and makes no configuration or output changes."
       }
     },
+    "obs_start_dual_pc_production": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "After explicit confirmation, changes scenes and source visibility on two creator-owned OBS computers and starts OBS Virtual Camera on the assigned compositor computer.",
+        "open_world_justification": "Controls private OBS production state but does not start a TikTok LIVE, publish content, or operate TikTok LIVE Studio.",
+        "destructive_justification": "Captures prior state before changes and restores completed changes in reverse order if startup fails."
+      }
+    },
+    "obs_stop_dual_pc_production": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "After explicit confirmation, stops only the Virtual Camera started by the selected session and restores captured OBS scenes and source visibility.",
+        "open_world_justification": "Controls private OBS state and does not end a TikTok LIVE or operate TikTok LIVE Studio.",
+        "destructive_justification": "Restores previously captured state, records failures precisely, and does not delete OBS resources or audit records."
+      }
+    },
+    "obs_list_dual_pc_sessions": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Only lists recent production sessions owned by the authenticated creator and their restoration status.",
+        "open_world_justification": "Reads private account audit data without changing OBS, TikTok, or public systems.",
+        "destructive_justification": "Does not modify or delete production sessions or OBS resources."
+      }
+    },
     "obs_inspect_status": {
       "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
@@ -168,6 +192,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "obs_run_ai_transition",
       "expected_output": "Runs the three media clips in order and returns the creator to the prior LIVE scene, or safely reports a media failure.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Prepare a saved two-computer production only after confirmation, then restore it after the creator finishes in TikTok LIVE Studio.",
+      "user_prompt": "Prepare Weekend LIVE on both OBS computers. Ask me before changing anything or starting Virtual Camera. Later, restore both computers after I confirm the TikTok LIVE has ended.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_inspect_dual_pc_readiness, obs_start_dual_pc_production, obs_stop_dual_pc_production",
+      "expected_output": "Performs a read-only preflight, asks for explicit confirmation, applies ordered creator-owned OBS changes, verifies Virtual Camera, never claims TikTok is live, and restores recorded state after a separate confirmed stop request.",
       "expected_output_url": null
     },
     {

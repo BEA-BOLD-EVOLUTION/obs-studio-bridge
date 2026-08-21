@@ -58,13 +58,16 @@ export function toolPayload(dispatchResult) {
   return JSON.parse(text);
 }
 
-export function evaluateInspection({ role, device, inspection, expected, requiredSources = [] }) {
+export function evaluateInspection({ role, device, inspection, expected, requiredSources = [], allowDisabledSources = false }) {
   const issues = [];
+  if (device.productionRole !== role) {
+    issues.push(`Computer '${device.name || device.id}' is no longer assigned the required '${role}' role.`);
+  }
   if (!inspection.scene?.exists) issues.push(`Scene '${expected.sceneName}' was not found.`);
   for (const sourceName of requiredSources) {
     const source = inspection.sources?.find(candidate => candidate.name === sourceName);
     if (!source?.exists) issues.push(`Source '${sourceName}' was not found in '${expected.sceneName}'.`);
-    else if (!source.enabled) issues.push(`Source '${sourceName}' is disabled in '${expected.sceneName}'.`);
+    else if (!source.enabled && !allowDisabledSources) issues.push(`Source '${sourceName}' is disabled in '${expected.sceneName}'.`);
   }
 
   const video = inspection.video || {};

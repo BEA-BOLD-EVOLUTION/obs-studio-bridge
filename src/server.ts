@@ -8,6 +8,7 @@ import { OBSWebSocket } from "obs-websocket-js";
 import { z } from "zod";
 import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
 import { inspectProductionResources } from "./production-readiness.js";
+import { setProgramScene, setSceneSourceVisibility } from "./scene-controls.js";
 import { registerWorkflowTools } from "./workflows.js";
 
 const host = "127.0.0.1";
@@ -195,8 +196,7 @@ function createMcpServer(): McpServer {
     inputSchema: { sceneName: z.string().min(1) },
     annotations: writeAnnotations
   }, async ({ sceneName }) => {
-    await obsCall("SetCurrentProgramScene", { sceneName });
-    return result({ ok: true, currentProgramSceneName: sceneName });
+    return result(await setProgramScene(obsCall, sceneName));
   });
 
   server.registerTool("obs_set_source_visibility", {
@@ -208,9 +208,7 @@ function createMcpServer(): McpServer {
     },
     annotations: writeAnnotations
   }, async ({ sceneName, sourceName, visible }) => {
-    const item = await obsCall("GetSceneItemId", { sceneName, sourceName });
-    await obsCall("SetSceneItemEnabled", { sceneName, sceneItemId: item.sceneItemId, sceneItemEnabled: visible });
-    return result({ ok: true, sceneName, sourceName, visible });
+    return result(await setSceneSourceVisibility(obsCall, sceneName, sourceName, visible));
   });
 
   server.registerTool("obs_set_input_mute", {

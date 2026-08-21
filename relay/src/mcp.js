@@ -50,9 +50,12 @@ export function createCreatorMcpServer({
   updateDevice,
   saveDualPcPreset,
   listDualPcPresets,
-  inspectDualPcReadiness
+  inspectDualPcReadiness,
+  startDualPcProduction,
+  stopDualPcProduction,
+  listProductionSessions
 }) {
-  const server = new McpServer({ name: "obs-creator-assistant", version: "0.4.0" });
+  const server = new McpServer({ name: "obs-creator-assistant", version: "0.5.0" });
 
   server.registerTool("obs_pair_computer", {
     description: "Use this when the creator gives a six-digit pairing code shown by OBS Creator Assistant on their computer. Pair that computer to the signed-in creator account.",
@@ -108,6 +111,30 @@ export function createCreatorMcpServer({
     inputSchema: { presetId: z.string().uuid() },
     annotations: readOnly
   }, async ({ presetId }) => result(await inspectDualPcReadiness(accessToken, presetId)));
+
+  server.registerTool("obs_start_dual_pc_production", {
+    description: "After explicit creator confirmation, prepare both computers from a saved preset in order and start OBS Virtual Camera on the Camera/Compositor PC. This never starts a TikTok LIVE.",
+    inputSchema: {
+      presetId: z.string().uuid(),
+      confirmed: z.literal(true).describe("Must be true only after the creator explicitly confirms changing both OBS computers and starting OBS Virtual Camera.")
+    },
+    annotations: write
+  }, async ({ presetId, confirmed }) => result(await startDualPcProduction(accessToken, ownerUserId, presetId, confirmed)));
+
+  server.registerTool("obs_stop_dual_pc_production", {
+    description: "After explicit creator confirmation, stop only the OBS Virtual Camera started by this production session and restore captured source and scene state on both computers. This does not end a TikTok LIVE.",
+    inputSchema: {
+      sessionId: z.string().uuid(),
+      confirmed: z.literal(true).describe("Must be true only after the creator confirms TikTok LIVE Studio no longer needs the OBS feed and prior OBS state should be restored.")
+    },
+    annotations: write
+  }, async ({ sessionId, confirmed }) => result(await stopDualPcProduction(accessToken, sessionId, confirmed)));
+
+  server.registerTool("obs_list_dual_pc_sessions", {
+    description: "List recent account-owned dual-PC production sessions, including active, restored, and failed restoration states.",
+    inputSchema: {},
+    annotations: readOnly
+  }, async () => result({ sessions: await listProductionSessions(accessToken) }));
 
   server.registerTool("obs_inspect_status", {
     description: "Use this when the creator asks whether OBS is connected, streaming, recording, or ready to use.",

@@ -11,6 +11,7 @@ import {
   readinessSummary,
   toolPayload
 } from "./dual-pc.js";
+import { startCoordinatedProduction, stopCoordinatedProduction } from "./production-coordinator.js";
 
 const port = Number(process.env.PORT || 3000);
 const supabaseUrl = process.env.SUPABASE_URL || "";
@@ -162,7 +163,7 @@ async function getDualPcPreset(accessToken, presetId) {
   return publicPreset(data);
 }
 
-async function inspectDualPcReadiness(accessToken, presetId) {
+async function inspectDualPcReadiness(accessToken, presetId, { allowDisabledSources = false } = {}) {
   const preset = await getDualPcPreset(accessToken, presetId);
   const [backgroundDevice, compositorDevice] = await Promise.all([
     getDevice(accessToken, preset.backgroundDeviceId),
@@ -186,12 +187,128 @@ async function inspectDualPcReadiness(accessToken, presetId) {
     role: "camera_compositor",
     device: publicDevice(compositorDevice),
     expected: { ...expected, sceneName: preset.compositorSceneName },
-    requiredSources: compositorSources
+    requiredSources: compositorSources,
+    allowDisabledSources
   });
   return {
     preset,
     summary: readinessSummary(background, compositor, preset.tiktokAudioConfiguredSeparately),
     devices: { background, compositor }
+  };
+}
+
+async function createProductionSession(accessToken, ownerUserId, preset, capturedState) {
+  const client = userClient(accessToken);
+  const { data, error } = await client.from("obs_dual_pc_sessions").insert({
+    owner_user_id: ownerUserId,
+    preset_id: preset.id,
+    background_device_id: preset.backgroundDeviceId,
+    compositor_device_id: preset.compositorDeviceId,
+    status: "preparing",
+    captured_state: capturedState,
+    completed_steps: [],
+    restoration_steps: []
+  }).select("*").single();
+  if (error?.code === "23505") throw new Error("This preset or one of its computers already has an active or unresolved production session.");
+  if (error) throw error;
+  return publicSession(data);
+}
+
+async function updateProductionSession(accessToken, sessionId, changes) {
+  const client = userClient(accessToken);
+  const record = { updated_at: new Date().toISOString() };
+  if (changes.status !== undefined) record.status = changes.status;
+  if (changes.completedSteps !== undefined) record.completed_steps = changes.completedSteps;
+  if (changes.restorationSteps !== undefined) record.restoration_steps = changes.restorationSteps;
+  if (changes.readinessSnapshot !== undefined) record.readiness_snapshot = changes.readinessSnapshot;
+  if (changes.errorSummary !== undefined) record.error_summary = changes.errorSummary;
+  if (changes.stoppedAt !== undefined) record.stopped_at = changes.stoppedAt;
+  const { data, error } = await client.from("obs_dual_pc_sessions").update(record).eq("id", sessionId).select("*").maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("That production session does not belong to this account.");
+  return publicSession(data);
+}
+
+async function getProductionSession(accessToken, sessionId) {
+  const client = userClient(accessToken);
+  const { data, error } = await client.from("obs_dual_pc_sessions").select("*").eq("id", sessionId).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("That production session does not belong to this account or no longer exists.");
+  return publicSession(data);
+}
+
+async function listProductionSessions(accessToken) {
+  const client = userClient(accessToken);
+  const { data, error } = await client.from("obs_dual_pc_sessions").select("*").order("created_at", { ascending: false }).limit(25);
+  if (error) throw error;
+  return (data || []).map(publicSession);
+}
+
+async function getUnresolvedSessionForPreset(accessToken, presetId) {
+  const client = userClient(accessToken);
+  const { data, error } = await client.from("obs_dual_pc_sessions")
+    .select("*")
+    .eq("preset_id", presetId)
+    .in("status", ["preparing", "active", "stopping", "restore_failed"])
+    .maybeSingle();
+  if (error) throw error;
+  return data ? publicSession(data) : null;
+}
+
+async function startDualPcProduction(accessToken, ownerUserId, presetId, confirmed) {
+  const existing = await getUnresolvedSessionForPreset(accessToken, presetId);
+  if (existing?.status === "active") {
+    return {
+      ok: true,
+      changed: false,
+      sessionId: existing.id,
+      status: "active",
+      readiness: existing.readinessSnapshot,
+      message: "This dual-PC production is already active. OBS Creator Assistant did not repeat any changes."
+    };
+  }
+  if (existing) throw new Error(`This preset already has a '${existing.status}' session. Restore or resolve session ${existing.id} before starting again.`);
+  const preset = await getDualPcPreset(accessToken, presetId);
+  const readiness = await inspectDualPcReadiness(accessToken, presetId, { allowDisabledSources: true });
+  return startCoordinatedProduction({
+    accessToken,
+    preset,
+    readiness,
+    confirmed,
+    dispatchCommand,
+    createSession: capturedState => createProductionSession(accessToken, ownerUserId, preset, capturedState),
+    updateSession: (sessionId, changes) => updateProductionSession(accessToken, sessionId, changes),
+    inspectReadiness: () => inspectDualPcReadiness(accessToken, presetId)
+  });
+}
+
+async function stopDualPcProduction(accessToken, sessionId, confirmed) {
+  const session = await getProductionSession(accessToken, sessionId);
+  return stopCoordinatedProduction({
+    accessToken,
+    session,
+    confirmed,
+    dispatchCommand,
+    updateSession: (id, changes) => updateProductionSession(accessToken, id, changes)
+  });
+}
+
+function publicSession(row) {
+  return {
+    id: row.id,
+    presetId: row.preset_id,
+    backgroundDeviceId: row.background_device_id,
+    compositorDeviceId: row.compositor_device_id,
+    status: row.status,
+    capturedState: row.captured_state || {},
+    completedSteps: row.completed_steps || [],
+    restorationSteps: row.restoration_steps || [],
+    readinessSnapshot: row.readiness_snapshot,
+    errorSummary: row.error_summary,
+    startedAt: row.started_at,
+    stoppedAt: row.stopped_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
 }
 
@@ -333,7 +450,10 @@ app.all("/mcp", requireUser, async (req, res) => {
     updateDevice,
     saveDualPcPreset,
     listDualPcPresets,
-    inspectDualPcReadiness
+    inspectDualPcReadiness,
+    startDualPcProduction,
+    stopDualPcProduction,
+    listProductionSessions
   });
 });
 
