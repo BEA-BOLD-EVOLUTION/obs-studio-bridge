@@ -69,6 +69,7 @@ Example requests:
 - Inspect both computers during an active or unresolved session for connection state, OBS versions, output state, CPU, memory, FPS, render lag, and encoding lag.
 - Report performance warnings per computer while clearly stating that transport-independent snapshots cannot verify the underlying inter-PC video signal.
 - After explicit confirmation, switch a scene or change an existing source's visibility on the Background or Camera/Compositor role during an active session.
+- After explicit confirmation, mute/unmute or set bounded volume on an existing OBS audio input on the selected production role.
 - Capture every role-specific update so a confirmed stop restores changes in reverse order, and compensate immediately when an update fails or times out.
 - Keep TikTok LIVE Studio audio setup, preview, **Go LIVE**, and **End LIVE** under creator control.
 
@@ -80,6 +81,8 @@ Example requests:
 - “Is either OBS computer dropping frames?”
 - “Change the Background computer to Neon City.”
 - “Hide the Lower Third source on the Camera/Compositor computer.”
+- “Lower Music on the Background computer to -12 dB.”
+- “Mute Mic/Aux on the Camera/Compositor computer.”
 - “I ended the TikTok LIVE. Restore both OBS computers.”
 
 #### Inspect OBS
@@ -216,7 +219,7 @@ OBS Creator Assistant does not currently:
 
 ## Phase 2 roadmap
 
-Phase 2 is being delivered in guarded slices. Virtual Camera control, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, and confirmed role-specific scene/source updates are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
+Phase 2 is being delivered in guarded slices. Virtual Camera control, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, and confirmed role-specific scene, source, mute, and volume updates are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
 
 ### Safer remote production controls
 
@@ -236,6 +239,8 @@ Phase 2 is being delivered in guarded slices. Virtual Camera control, named comp
 - Save and restore scene-layout snapshots.
 
 ### Advanced audio control
+
+Confirmed mute/unmute and bounded volume changes for existing inputs are implemented for active dual-PC sessions. TikTok LIVE Studio audio routing and testing remain creator-controlled.
 
 - Display live audio levels and clipping warnings.
 - Control audio monitoring, sync offsets, and track assignments.
@@ -268,7 +273,7 @@ Phase 2 is being delivered in guarded slices. Virtual Camera control, named comp
 
 ### Dual-PC TikTok LIVE Studio production
 
-Naming, role assignment, preset storage, read-only readiness, ordered startup, production-session auditing, reverse-order restoration, on-demand health snapshots, and confirmed role-specific scene/source updates are implemented. Continuous notifications, synchronized transitions, and role-specific audio updates remain planned.
+Naming, role assignment, preset storage, read-only readiness, ordered startup, production-session auditing, reverse-order restoration, on-demand health snapshots, and confirmed role-specific scene/source/audio updates are implemented. Continuous notifications and synchronized cross-computer transitions remain planned.
 
 Support creators who use one OBS computer for backgrounds and a second OBS computer for camera composition, overlays, and effects, with the finished video delivered to TikTok LIVE Studio through OBS Virtual Camera:
 

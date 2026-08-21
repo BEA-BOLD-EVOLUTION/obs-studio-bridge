@@ -198,13 +198,15 @@ export function virtualCameraCommand(active) {
 export function inverseCommand(step) {
   if (step.type === "background_scene" || step.type === "compositor_scene") return sceneCommand(step.previousSceneName);
   if (step.type === "source_visibility") return sourceVisibilityCommand(step.sceneName, step.sourceName, step.previousVisible);
+  if (step.type === "input_mute") return { tool: "obs_set_input_mute", arguments: { inputName: step.inputName, muted: step.previousMuted } };
+  if (step.type === "input_volume") return { tool: "obs_set_input_volume", arguments: { inputName: step.inputName, volumeDb: step.previousVolumeDb } };
   if (step.type === "virtual_camera") return virtualCameraCommand(step.previousActive);
   throw new Error(`Unsupported restoration step '${step.type}'.`);
 }
 
 export function restorationKey(step) {
   if (step.id) return step.id;
-  return [step.type, step.deviceId, step.sceneName, step.sourceName].filter(Boolean).join(":");
+  return [step.type, step.deviceId, step.sceneName, step.sourceName, step.inputName].filter(Boolean).join(":");
 }
 
 function readinessIssues(readiness) {
