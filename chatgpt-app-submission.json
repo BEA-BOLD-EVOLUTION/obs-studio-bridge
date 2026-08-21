@@ -24,6 +24,38 @@
         "destructive_justification": "Does not delete, revoke, overwrite, or otherwise change device state."
       }
     },
+    "obs_update_computer": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Updates a friendly name, production role, or default setting for one computer owned by the authenticated creator.",
+        "open_world_justification": "Changes only private account metadata and does not publish content or change OBS output.",
+        "destructive_justification": "The settings are reversible and do not remove a computer or delete OBS resources."
+      }
+    },
+    "obs_save_dual_pc_preset": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Stores or updates private production metadata for two computers owned by the authenticated creator.",
+        "open_world_justification": "Does not change OBS, TikTok LIVE Studio, or public internet state.",
+        "destructive_justification": "Does not delete OBS resources and only updates a preset when its authenticated owner supplies its ID."
+      }
+    },
+    "obs_list_dual_pc_presets": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Only lists dual-PC presets owned by the authenticated creator.",
+        "open_world_justification": "Reads private account metadata without changing external systems.",
+        "destructive_justification": "Does not modify or delete presets, computers, or OBS resources."
+      }
+    },
+    "obs_inspect_dual_pc_readiness": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Reads connection, scene, source, video, and Virtual Camera state from the two creator-owned computers in a saved preset.",
+        "open_world_justification": "Does not change OBS or control TikTok LIVE Studio and does not publish content.",
+        "destructive_justification": "Uses a fixed read-only local inspection and makes no configuration or output changes."
+      }
+    },
     "obs_inspect_status": {
       "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
@@ -136,6 +168,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "obs_run_ai_transition",
       "expected_output": "Runs the three media clips in order and returns the creator to the prior LIVE scene, or safely reports a media failure.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Save and inspect a creator-owned two-computer TikTok production without changing either OBS instance.",
+      "user_prompt": "Save these Background and Camera computers as Weekend LIVE, then check whether both scenes, my Background Feed source, 1080x1920 at 30 FPS, and OBS Virtual Camera are ready without changing anything.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_update_computer, obs_save_dual_pc_preset, obs_inspect_dual_pc_readiness",
+      "expected_output": "Stores only creator-owned device references, performs a read-only check on both computers, reports per-computer issues, and distinguishes OBS readiness from readiness for TikTok preview.",
       "expected_output_url": null
     },
     {

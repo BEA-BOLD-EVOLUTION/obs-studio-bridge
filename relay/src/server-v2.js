@@ -3,6 +3,14 @@ import express from "express";
 import { WebSocketServer } from "ws";
 import { createClient } from "@supabase/supabase-js";
 import { handleMcpRequest } from "./mcp.js";
+import {
+  evaluateInspection,
+  inspectionCommand,
+  presetRecord,
+  publicPreset,
+  readinessSummary,
+  toolPayload
+} from "./dual-pc.js";
 
 const port = Number(process.env.PORT || 3000);
 const supabaseUrl = process.env.SUPABASE_URL || "";
@@ -62,7 +70,7 @@ async function listDevices(accessToken) {
   const client = userClient(accessToken);
   const { data, error } = await client
     .from("obs_devices")
-    .select("id, device_name, paired_at, last_seen_at, revoked_at, created_at")
+    .select("id, device_name, production_role, is_default, paired_at, last_seen_at, revoked_at, created_at")
     .is("revoked_at", null)
     .not("owner_user_id", "is", null)
     .order("created_at", { ascending: true });
@@ -70,6 +78,8 @@ async function listDevices(accessToken) {
   return (data || []).map(device => ({
     id: device.id,
     name: device.device_name,
+    productionRole: device.production_role,
+    isDefault: device.is_default,
     pairedAt: device.paired_at,
     lastSeenAt: device.last_seen_at,
     online: liveDevices.has(device.id)
@@ -80,12 +90,124 @@ async function getDevice(accessToken, deviceId) {
   const client = userClient(accessToken);
   const { data, error } = await client
     .from("obs_devices")
-    .select("id, device_name, paired_at, last_seen_at, revoked_at")
+    .select("id, device_name, production_role, is_default, paired_at, last_seen_at, revoked_at")
     .eq("id", deviceId)
     .is("revoked_at", null)
     .maybeSingle();
   if (error) throw error;
   return data || null;
+}
+
+async function updateDevice(accessToken, deviceId, input) {
+  const existing = await getDevice(accessToken, deviceId);
+  if (!existing) throw new Error("That OBS computer is not linked to this account.");
+  const client = userClient(accessToken);
+  const changes = {};
+  if (input.name !== undefined) changes.device_name = input.name.trim();
+  if (input.productionRole !== undefined) changes.production_role = input.productionRole;
+  if (input.isDefault !== undefined) changes.is_default = input.isDefault;
+  if (Object.keys(changes).length === 0) throw new Error("Provide a name, production role, or default-computer setting to update.");
+
+  if (changes.is_default === true) {
+    const { error: clearError } = await client.from("obs_devices").update({ is_default: false }).neq("id", deviceId);
+    if (clearError) throw clearError;
+  }
+
+  const { data, error } = await client
+    .from("obs_devices")
+    .update(changes)
+    .eq("id", deviceId)
+    .select("id, device_name, production_role, is_default")
+    .single();
+  if (error) throw error;
+  return {
+    id: data.id,
+    name: data.device_name,
+    productionRole: data.production_role,
+    isDefault: data.is_default
+  };
+}
+
+async function saveDualPcPreset(accessToken, ownerUserId, input) {
+  const [background, compositor] = await Promise.all([
+    getDevice(accessToken, input.backgroundDeviceId),
+    getDevice(accessToken, input.compositorDeviceId)
+  ]);
+  if (!background || !compositor) throw new Error("Every computer in the preset must be linked to this account.");
+  if (background.production_role !== "background") throw new Error("Assign the Background role to the selected background computer first.");
+  if (compositor.production_role !== "camera_compositor") throw new Error("Assign the Camera/Compositor role to the selected compositor computer first.");
+
+  const client = userClient(accessToken);
+  const record = { owner_user_id: ownerUserId, ...presetRecord(input), updated_at: new Date().toISOString() };
+  const query = input.presetId
+    ? client.from("obs_dual_pc_presets").update(record).eq("id", input.presetId)
+    : client.from("obs_dual_pc_presets").insert(record);
+  const { data, error } = await query.select("*").single();
+  if (error) throw error;
+  return publicPreset(data);
+}
+
+async function listDualPcPresets(accessToken) {
+  const client = userClient(accessToken);
+  const { data, error } = await client.from("obs_dual_pc_presets").select("*").order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data || []).map(publicPreset);
+}
+
+async function getDualPcPreset(accessToken, presetId) {
+  const client = userClient(accessToken);
+  const { data, error } = await client.from("obs_dual_pc_presets").select("*").eq("id", presetId).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("That dual-PC preset does not belong to this account or no longer exists.");
+  return publicPreset(data);
+}
+
+async function inspectDualPcReadiness(accessToken, presetId) {
+  const preset = await getDualPcPreset(accessToken, presetId);
+  const [backgroundDevice, compositorDevice] = await Promise.all([
+    getDevice(accessToken, preset.backgroundDeviceId),
+    getDevice(accessToken, preset.compositorDeviceId)
+  ]);
+  if (!backgroundDevice || !compositorDevice) throw new Error("A computer saved in this preset is no longer linked to this account.");
+
+  const compositorSources = [preset.receivingSourceName, preset.cameraSourceName, ...preset.overlaySourceNames].filter(Boolean);
+  const checks = await Promise.allSettled([
+    dispatchCommand(accessToken, preset.backgroundDeviceId, inspectionCommand(preset.backgroundSceneName)),
+    dispatchCommand(accessToken, preset.compositorDeviceId, inspectionCommand(preset.compositorSceneName, compositorSources))
+  ]);
+  const expected = { width: preset.expectedWidth, height: preset.expectedHeight, fps: preset.expectedFps };
+  const background = readinessDeviceResult(checks[0], {
+    role: "background",
+    device: publicDevice(backgroundDevice),
+    expected: { ...expected, sceneName: preset.backgroundSceneName },
+    requiredSources: []
+  });
+  const compositor = readinessDeviceResult(checks[1], {
+    role: "camera_compositor",
+    device: publicDevice(compositorDevice),
+    expected: { ...expected, sceneName: preset.compositorSceneName },
+    requiredSources: compositorSources
+  });
+  return {
+    preset,
+    summary: readinessSummary(background, compositor, preset.tiktokAudioConfiguredSeparately),
+    devices: { background, compositor }
+  };
+}
+
+function readinessDeviceResult(settled, context) {
+  if (settled.status === "rejected") {
+    return { role: context.role, device: context.device, ready: false, issues: [settled.reason instanceof Error ? settled.reason.message : String(settled.reason)], inspection: null };
+  }
+  try {
+    return evaluateInspection({ ...context, inspection: toolPayload(settled.value) });
+  } catch (error) {
+    return { role: context.role, device: context.device, ready: false, issues: [error instanceof Error ? error.message : String(error)], inspection: null };
+  }
+}
+
+function publicDevice(device) {
+  return { id: device.id, name: device.device_name, productionRole: device.production_role, online: liveDevices.has(device.id) };
 }
 
 async function resolveDevice(accessToken, deviceId) {
@@ -98,6 +220,8 @@ async function resolveDevice(accessToken, deviceId) {
   const devices = await listDevices(accessToken);
   const online = devices.filter(device => device.online);
   if (online.length === 1) return online[0];
+  const defaultOnline = online.filter(device => device.isDefault);
+  if (defaultOnline.length === 1) return defaultOnline[0];
   if (online.length > 1) throw new Error("More than one OBS computer is online. Specify deviceId.");
   if (devices.length === 0) throw new Error("No OBS computers are linked to this account.");
   if (devices.length === 1) return devices[0];
@@ -203,8 +327,13 @@ app.post("/v1/devices/:deviceId/revoke", requireUser, async (req, res) => {
 app.all("/mcp", requireUser, async (req, res) => {
   await handleMcpRequest(req, res, {
     accessToken: req.obsAccessToken,
+    ownerUserId: req.obsUser.id,
     listDevices,
-    dispatchCommand
+    dispatchCommand,
+    updateDevice,
+    saveDualPcPreset,
+    listDualPcPresets,
+    inspectDualPcReadiness
   });
 });
 
