@@ -1,5 +1,6 @@
 export const allowedRemoteTools = new Set([
   "obs_inspect_status",
+  "obs_get_performance_stats",
   "obs_list_scenes",
   "obs_inspect_production_resources",
   "obs_switch_scene",

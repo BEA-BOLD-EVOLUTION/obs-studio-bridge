@@ -10,6 +10,7 @@ test("the three virtual camera tools are remotely allowlisted", () => {
 
 test("the production readiness inspection is remotely allowlisted", () => {
   assert.equal(isRemoteToolAllowed("obs_inspect_production_resources"), true);
+  assert.equal(isRemoteToolAllowed("obs_get_performance_stats"), true);
   assert.equal(isRemoteToolAllowed("obs_set_source_visibility"), true);
 });
 

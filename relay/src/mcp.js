@@ -53,7 +53,8 @@ export function createCreatorMcpServer({
   inspectDualPcReadiness,
   startDualPcProduction,
   stopDualPcProduction,
-  listProductionSessions
+  listProductionSessions,
+  inspectDualPcSessionHealth
 }) {
   const server = new McpServer({ name: "obs-creator-assistant", version: "0.5.0" });
 
@@ -135,6 +136,12 @@ export function createCreatorMcpServer({
     inputSchema: {},
     annotations: readOnly
   }, async () => result({ sessions: await listProductionSessions(accessToken) }));
+
+  server.registerTool("obs_inspect_dual_pc_session_health", {
+    description: "Read a live dual-PC production health snapshot from both OBS computers. Reports connection, output state, CPU, memory, FPS, render lag, and encoding lag without changing OBS or claiming the inter-PC video signal is verified.",
+    inputSchema: { sessionId: z.string().uuid() },
+    annotations: readOnly
+  }, async ({ sessionId }) => result(await inspectDualPcSessionHealth(accessToken, sessionId)));
 
   server.registerTool("obs_inspect_status", {
     description: "Use this when the creator asks whether OBS is connected, streaming, recording, or ready to use.",

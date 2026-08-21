@@ -31,5 +31,7 @@ test("ChatGPT submission metadata includes confirmed coordination and session to
   assert.equal(submission.tools.obs_start_dual_pc_production.annotations.readOnlyHint, false);
   assert.equal(submission.tools.obs_stop_dual_pc_production.annotations.readOnlyHint, false);
   assert.equal(submission.tools.obs_list_dual_pc_sessions.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.obs_inspect_dual_pc_session_health.annotations.readOnlyHint, true);
   assert.match(submission.tools.obs_start_dual_pc_production.justifications.open_world_justification, /does not start a TikTok LIVE/i);
+  assert.match(submission.tools.obs_inspect_dual_pc_session_health.justifications.destructive_justification, /read-only status and performance/i);
 });

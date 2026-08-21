@@ -33,6 +33,9 @@ This plan covers the Phase 2 path from ChatGPT through the hosted relay and loca
 - Preserve the authenticated account token and selected device ID.
 - Reject unsupported action names before dispatch.
 - Verify that missing or false confirmation cannot dispatch a state-changing command.
+- Verify a dual-PC health snapshot dispatches only read-only status and performance commands to the two session-owned computers.
+- Verify CPU, FPS, render-lag, encoding-lag, offline-device, and inactive-Virtual-Camera warnings remain separated by role.
+- Verify health results explicitly decline to claim that a transport-independent inter-PC video signal was validated.
 
 ### CI checks
 
@@ -76,5 +79,6 @@ Do not use a public TikTok broadcast for routine automated testing. Use TikTok's
 
 - Automated tests use a fake OBS request adapter; a real OBS integration runner is still required.
 - TikTok LIVE Studio does not expose a documented control API used by this project, so preview and audio validation remain manual.
+- Health monitoring is currently an on-demand snapshot; scheduled notifications and a real two-computer soak test remain future work.
 - Dual-PC role assignment, presets, readiness coordination, and failure compensation are subsequent Phase 2 slices.
 - No signed Phase 2 Windows beta can be distributed until the code-signing path is approved and verified.
