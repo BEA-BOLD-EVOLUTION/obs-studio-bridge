@@ -18,7 +18,7 @@
 namespace {
 constexpr auto HealthUrl = "http://127.0.0.1:8787/health";
 constexpr auto OnboardingUrl = "http://127.0.0.1:8788/";
-constexpr auto DownloadUrl = "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases/latest/download/OBS-Creator-Assistant-Setup.exe";
+constexpr auto DownloadUrl = "https://obs.boldevolution.net/download";
 }
 
 CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
