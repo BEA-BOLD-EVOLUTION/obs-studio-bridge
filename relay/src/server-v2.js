@@ -12,6 +12,7 @@ import {
   toolPayload
 } from "./dual-pc.js";
 import { startCoordinatedProduction, stopCoordinatedProduction } from "./production-coordinator.js";
+import { inspectProductionHealth } from "./production-health.js";
 
 const port = Number(process.env.PORT || 3000);
 const supabaseUrl = process.env.SUPABASE_URL || "";
@@ -244,6 +245,20 @@ async function listProductionSessions(accessToken) {
   return (data || []).map(publicSession);
 }
 
+async function inspectDualPcSessionHealth(accessToken, sessionId) {
+  const session = await getProductionSession(accessToken, sessionId);
+  if (["stopped", "restored_after_failure"].includes(session.status)) {
+    throw new Error("That production session has ended. Start a new session before checking live production health.");
+  }
+  const preset = await getDualPcPreset(accessToken, session.presetId);
+  return inspectProductionHealth({
+    accessToken,
+    session,
+    expectedFps: preset.expectedFps,
+    dispatchCommand
+  });
+}
+
 async function getUnresolvedSessionForPreset(accessToken, presetId) {
   const client = userClient(accessToken);
   const { data, error } = await client.from("obs_dual_pc_sessions")
@@ -453,7 +468,8 @@ app.all("/mcp", requireUser, async (req, res) => {
     inspectDualPcReadiness,
     startDualPcProduction,
     stopDualPcProduction,
-    listProductionSessions
+    listProductionSessions,
+    inspectDualPcSessionHealth
   });
 });
 
