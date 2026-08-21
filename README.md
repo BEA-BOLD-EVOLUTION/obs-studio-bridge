@@ -17,11 +17,13 @@ If the application is accepted, future Windows releases will:
 
 Do not download installers from mirrors or third-party sites. There is currently no approved Windows installer.
 
+The permanent branded download address is [obs.boldevolution.net/download](https://obs.boldevolution.net/download). It redirects to the official signed installer when one is available and otherwise opens the official release status page.
+
 ## Install on Windows
 
 These instructions will apply after an approved, signed release is published:
 
-1. Download **OBS-Creator-Assistant-Setup.exe** only from the [official releases page](https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases).
+1. Open [obs.boldevolution.net/download](https://obs.boldevolution.net/download) to download **OBS-Creator-Assistant-Setup.exe** from the official signed release.
 2. Close OBS Studio.
 3. Double-click the installer and approve the Windows prompt.
 4. Reopen OBS Studio and choose **Docks → OBS Creator Assistant**.
