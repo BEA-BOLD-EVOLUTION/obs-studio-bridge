@@ -63,6 +63,22 @@ test("readiness reports resolution, frame-rate, and Virtual Camera mismatches", 
   assert.match(result.issues.join(" "), /Virtual Camera is unavailable/);
 });
 
+test("readiness rejects a computer whose saved production role changed", () => {
+  const result = evaluateInspection({
+    role: "background",
+    device: { id: "background", name: "Background PC", productionRole: "camera_compositor" },
+    expected: { sceneName: "Background LIVE", width: 1080, height: 1920, fps: 30 },
+    inspection: {
+      scene: { exists: true },
+      sources: [],
+      video: { outputWidth: 1080, outputHeight: 1920, fpsNumerator: 30, fpsDenominator: 1 },
+      virtualCamera: {}
+    }
+  });
+  assert.equal(result.ready, false);
+  assert.match(result.issues.join(" "), /no longer assigned/);
+});
+
 test("TikTok preview is distinct from OBS readiness", () => {
   const background = { ready: true, inspection: {} };
   const compositor = { ready: true, inspection: { virtualCamera: { outputActive: false } } };

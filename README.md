@@ -60,12 +60,18 @@ Example requests:
 - Verify that both computers are online and that the required scenes and sources exist and are enabled.
 - Compare both OBS outputs with the preset resolution and frame rate.
 - Check OBS Virtual Camera availability and clearly distinguish **OBS ready**, **ready to start Virtual Camera**, and **ready for TikTok preview**.
+- After explicit confirmation, prepare the Background PC first, enable required compositor sources, switch the Camera/Compositor scene, and start OBS Virtual Camera.
+- Record every changed scene, source, and output state in an account-owned production session.
+- Restore changed state in reverse order after a failed startup or a confirmed stop request.
+- Avoid repeating an already active production and block overlapping unresolved sessions.
 - Keep TikTok LIVE Studio audio setup, preview, **Go LIVE**, and **End LIVE** under creator control.
 
 Example requests:
 
 - “Save my two-computer TikTok setup as Weekend LIVE.”
 - “Check whether Weekend LIVE is ready, but do not change anything.”
+- “Prepare Weekend LIVE, then ask me before changing both computers.”
+- “I ended the TikTok LIVE. Restore both OBS computers.”
 
 #### Inspect OBS
 
@@ -197,11 +203,11 @@ OBS Creator Assistant does not currently:
 - Control an OBS computer that is not paired to the authenticated user's account.
 - Send the OBS WebSocket password to ChatGPT or the hosted relay.
 - Expose local-only output controls through the current hosted ChatGPT allowlist.
-- Start, stop, or coordinate a dual-PC preset automatically; this release provides saved setup and read-only readiness only.
+- Start or end a TikTok LIVE; OBS Creator Assistant prepares and restores OBS, while TikTok's final LIVE controls remain creator-controlled.
 
 ## Phase 2 roadmap
 
-Phase 2 is being delivered in guarded slices. Virtual Camera control, named computer roles, reusable dual-PC presets, and read-only dual-PC readiness are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
+Phase 2 is being delivered in guarded slices. Virtual Camera control, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, and restoration are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
 
 ### Safer remote production controls
 
@@ -253,7 +259,7 @@ Phase 2 is being delivered in guarded slices. Virtual Camera control, named comp
 
 ### Dual-PC TikTok LIVE Studio production
 
-The naming, role assignment, preset storage, and read-only readiness portions of this section are implemented. Coordinated scene changes, startup, monitoring, and restoration remain planned.
+Naming, role assignment, preset storage, read-only readiness, ordered startup, production-session auditing, and reverse-order restoration are implemented. Continuous monitoring and role-specific production updates remain planned.
 
 Support creators who use one OBS computer for backgrounds and a second OBS computer for camera composition, overlays, and effects, with the finished video delivered to TikTok LIVE Studio through OBS Virtual Camera:
 

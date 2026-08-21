@@ -23,3 +23,13 @@ test("ChatGPT submission metadata includes dual-PC setup and readiness tools", a
   assert.equal(submission.tools.obs_list_dual_pc_presets.annotations.readOnlyHint, true);
   assert.equal(submission.tools.obs_inspect_dual_pc_readiness.annotations.readOnlyHint, true);
 });
+
+test("ChatGPT submission metadata includes confirmed coordination and session tools", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+
+  assert.equal(submission.tools.obs_start_dual_pc_production.annotations.readOnlyHint, false);
+  assert.equal(submission.tools.obs_stop_dual_pc_production.annotations.readOnlyHint, false);
+  assert.equal(submission.tools.obs_list_dual_pc_sessions.annotations.readOnlyHint, true);
+  assert.match(submission.tools.obs_start_dual_pc_production.justifications.open_world_justification, /does not start a TikTok LIVE/i);
+});

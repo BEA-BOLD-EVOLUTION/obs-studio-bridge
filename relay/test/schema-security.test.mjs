@@ -18,3 +18,22 @@ test("pairing RPC grants are limited to the role that needs each operation", asy
   assert.match(sql, /claim_obs_device\(uuid, text\) from anon/i);
   assert.match(sql, /claim_obs_device_by_code\(text\) from anon/i);
 });
+
+test("production sessions are account-owned, non-deletable audit records", async () => {
+  const sql = await readFile(new URL("../migrations/20260820_phase_2_production_sessions.sql", import.meta.url), "utf8");
+  assert.match(sql, /foreign key \(owner_user_id, preset_id\)/i);
+  assert.match(sql, /enable row level security/i);
+  assert.match(sql, /grant select, insert, update on table public\.obs_dual_pc_sessions to authenticated/i);
+  assert.doesNotMatch(sql, /grant[^;]*delete[^;]*obs_dual_pc_sessions/i);
+  assert.doesNotMatch(sql, /users_can_delete_own_dual_pc_sessions/i);
+  assert.match(sql, /one_unresolved_per_preset/i);
+});
+
+test("unresolved production sessions lock both creator-owned computers", async () => {
+  const sql = await readFile(new URL("../migrations/20260820_phase_2_session_device_locking.sql", import.meta.url), "utf8");
+  assert.match(sql, /foreign key \(owner_user_id, background_device_id\)/i);
+  assert.match(sql, /foreign key \(owner_user_id, compositor_device_id\)/i);
+  assert.match(sql, /background_device_lock/i);
+  assert.match(sql, /compositor_device_lock/i);
+  assert.match(sql, /background_device_id <> compositor_device_id/i);
+});
