@@ -54,7 +54,8 @@ export function createCreatorMcpServer({
   startDualPcProduction,
   stopDualPcProduction,
   listProductionSessions,
-  inspectDualPcSessionHealth
+  inspectDualPcSessionHealth,
+  updateDualPcProduction
 }) {
   const server = new McpServer({ name: "obs-creator-assistant", version: "0.5.0" });
 
@@ -142,6 +143,20 @@ export function createCreatorMcpServer({
     inputSchema: { sessionId: z.string().uuid() },
     annotations: readOnly
   }, async ({ sessionId }) => result(await inspectDualPcSessionHealth(accessToken, sessionId)));
+
+  server.registerTool("obs_update_dual_pc_production", {
+    description: "After explicit creator confirmation, change one role in an active dual-PC session by switching its OBS scene or changing one existing source's visibility. The role selects the session-owned computer; TikTok LIVE Studio is never controlled.",
+    inputSchema: {
+      sessionId: z.string().uuid(),
+      role: z.enum(["background", "camera_compositor"]),
+      action: z.enum(["switch_scene", "set_source_visibility"]),
+      sceneName: z.string().trim().min(1).max(120),
+      sourceName: z.string().trim().min(1).max(120).optional(),
+      visible: z.boolean().optional(),
+      confirmed: z.literal(true).describe("Must be true only after the creator confirms this role-specific OBS change during the active production.")
+    },
+    annotations: { ...write, idempotentHint: true }
+  }, async ({ sessionId, ...input }) => result(await updateDualPcProduction(accessToken, sessionId, input)));
 
   server.registerTool("obs_inspect_status", {
     description: "Use this when the creator asks whether OBS is connected, streaming, recording, or ready to use.",
