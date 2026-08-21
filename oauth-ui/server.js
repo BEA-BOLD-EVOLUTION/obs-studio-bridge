@@ -20,13 +20,9 @@ app.get("/download", async (_req, res) => {
   try {
     const response = await fetch(releaseDownloadUrl, {
       method: "HEAD",
-      redirect: "manual",
+      redirect: "follow",
       signal: AbortSignal.timeout(5000)
     });
-    const location = response.headers.get("location");
-    if (response.status >= 300 && response.status < 400 && location) {
-      return res.redirect(302, location);
-    }
     if (response.ok) {
       return res.redirect(302, releaseDownloadUrl);
     }
