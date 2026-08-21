@@ -5,12 +5,59 @@ const port = Number(process.env.PORT || 3000);
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || "";
 
+const releaseDownloadUrl = process.env.RELEASE_DOWNLOAD_URL
+  || "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases/latest/download/OBS-Creator-Assistant-Setup.exe";
+const releasesPageUrl = "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases";
+
 if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error("SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are required.");
 }
 
 app.disable("x-powered-by");
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.get("/download", async (_req, res) => {
+  try {
+    const response = await fetch(releaseDownloadUrl, {
+      method: "HEAD",
+      redirect: "manual",
+      signal: AbortSignal.timeout(5000)
+    });
+    const location = response.headers.get("location");
+    if (response.status >= 300 && response.status < 400 && location) {
+      return res.redirect(302, location);
+    }
+    if (response.ok) {
+      return res.redirect(302, releaseDownloadUrl);
+    }
+  } catch {
+    // Fall through to the official release status page when GitHub is unavailable.
+  }
+  return res.redirect(302, releasesPageUrl);
+});
+
+app.get("/", (req, res, next) => {
+  if (typeof req.query.authorization_id === "string") return next();
+  return res.type("html").send(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OBS Creator Assistant | Bold Evolution Agency</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f7f7f7;background:#09090b}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at top,#22222a 0,#09090b 55%)}main{width:min(680px,100%);background:rgba(24,24,28,.92);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:clamp(28px,6vw,52px);box-shadow:0 24px 80px rgba(0,0,0,.4)}.eyebrow{font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:#c9a85c;font-weight:700}h1{font-size:clamp(2.1rem,7vw,4rem);line-height:1.02;margin:14px 0 18px}p{color:#bbb;line-height:1.65;font-size:1.05rem}.actions{display:flex;gap:12px;flex-wrap:wrap;margin:30px 0 18px}a{color:#e8d29a}.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:14px 22px;font-weight:700;text-decoration:none}.primary{background:#f7f7f7;color:#111}.secondary{border:1px solid rgba(255,255,255,.16);color:#f7f7f7}.note{font-size:.9rem;color:#888;margin:0}
+</style>
+</head>
+<body><main>
+<div class="eyebrow">Bold Evolution Agency</div>
+<h1>OBS Creator Assistant</h1>
+<p>Connect ChatGPT securely to your OBS computers, inspect production readiness, and coordinate creator-approved OBS actions.</p>
+<div class="actions">
+<a class="primary" href="/download">Download for Windows</a>
+<a class="secondary" href="${releasesPageUrl}">Release status</a>
+</div>
+<p class="note">Downloads come only from the official project release. If a signed installer is not available yet, the download link opens the current release status instead.</p>
+</main></body></html>`);
+});
 
 app.get(["/", "/oauth/consent"], (_req, res) => {
   res.type("html").send(`<!doctype html>
