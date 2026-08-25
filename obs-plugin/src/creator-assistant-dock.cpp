@@ -77,6 +77,7 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 	clipMode_ = new QComboBox(this);
 	clipMode_->addItem(tr("Program View"), QStringLiteral("program"));
 	clipMode_->addItem(tr("Viewer View"), QStringLiteral("viewer"));
+	clipMode_->addItem(tr("Both"), QStringLiteral("both"));
 	modeRow->addWidget(modeLabel);
 	modeRow->addWidget(clipMode_, 1);
 	layout->addLayout(modeRow);
@@ -193,14 +194,18 @@ void CreatorAssistantDock::showConnected(const QByteArray &payload)
 	const auto document = QJsonDocument::fromJson(payload);
 	const auto object = document.object();
 	const bool obsConnected = object.value(QStringLiteral("obsConnected")).toBool(false);
+	const bool setupComplete = object.value(QStringLiteral("setupComplete")).toBool(false);
 
-	status_->setText(obsConnected ? tr("● Connected") : tr("● Assistant running"));
-	status_->setStyleSheet(QStringLiteral("color: #2ea043;"));
-	details_->setText(obsConnected ? tr("ChatGPT can reach this OBS computer.")
-				       : tr("Open OBS WebSocket settings to finish the local connection."));
+	status_->setText(!setupComplete ? tr("● Setup needed")
+					: obsConnected ? tr("● Ready") : tr("● Assistant running"));
+	status_->setStyleSheet(setupComplete ? QStringLiteral("color: #2ea043;")
+						 : QStringLiteral("color: #d29922;"));
+	details_->setText(!setupComplete ? tr("Choose how you want Creator Assistant to make clips.")
+					 : obsConnected ? tr("Creator Assistant is ready.")
+						: tr("Restart OBS to finish the local connection."));
 	startButton_->setEnabled(false);
 	openButton_->setEnabled(true);
-	openButton_->setText(tr("Open Setup"));
+	openButton_->setText(setupComplete ? tr("Open Setup") : tr("Set Up Creator Assistant"));
 }
 
 void CreatorAssistantDock::showDisconnected()
@@ -229,10 +234,11 @@ void CreatorAssistantDock::showClipperStatus(const QByteArray &payload)
 	}
 
 	const bool viewerMode = mode == QStringLiteral("viewer");
+	const bool bothMode = mode == QStringLiteral("both");
 	clipperStatus_->setText(replayActive ? tr("● Clipping ready") : tr("● Connected — buffer off"));
 	clipperStatus_->setStyleSheet(replayActive ? QStringLiteral("color: #2ea043;")
 					       : QStringLiteral("color: #d29922;"));
-	clipperDetails_->setText(sceneName.isEmpty()
+	clipperDetails_->setText(bothMode ? tr("Program View and Viewer View are connected.") : sceneName.isEmpty()
 				 ? (viewerMode ? tr("Viewer View is connected.") : tr("Program View is connected."))
 				 : (viewerMode ? tr("Viewer View scene: %1").arg(sceneName)
 					       : tr("Program View scene: %1").arg(sceneName)));
@@ -243,9 +249,13 @@ void CreatorAssistantDock::showClipperStatus(const QByteArray &payload)
 void CreatorAssistantDock::showClipperDisconnected(const QString &message)
 {
 	const bool viewerMode = selectedClipMode() == QStringLiteral("viewer");
-	clipperStatus_->setText(viewerMode ? tr("● Viewer View not connected") : tr("● Program View not connected"));
+	const bool bothMode = selectedClipMode() == QStringLiteral("both");
+	clipperStatus_->setText(bothMode ? tr("● One or both views not connected")
+					  : viewerMode ? tr("● Viewer View not connected") : tr("● Program View not connected"));
 	clipperStatus_->setStyleSheet(QStringLiteral("color: #d29922;"));
-	clipperDetails_->setText(message.isEmpty()
+	clipperDetails_->setText(message.isEmpty() && bothMode
+				 ? tr("Both requires the main Production OBS session and the separate Viewer/Clipper OBS session.")
+				 : message.isEmpty()
 				 ? (viewerMode
 					? tr("Start the dedicated Viewer/Clipper OBS session. AirPlay, mirroring, and hardware capture are all supported.")
 					: tr("Connect the main production OBS session to use Program View clipping."))
@@ -320,7 +330,9 @@ void CreatorAssistantDock::saveClip()
 		if (reply->error() == QNetworkReply::NoError) {
 			clipperStatus_->setText(tr("✓ Clip saved"));
 			clipperStatus_->setStyleSheet(QStringLiteral("color: #2ea043;"));
-			clipperDetails_->setText(mode == QStringLiteral("viewer")
+			clipperDetails_->setText(mode == QStringLiteral("both")
+				? tr("Saved both Program View and Viewer View replay buffers.")
+				: mode == QStringLiteral("viewer")
 				? tr("Saved the Viewer View replay buffer.")
 				: tr("Saved the Program View replay buffer."));
 			clipButton_->setEnabled(true);

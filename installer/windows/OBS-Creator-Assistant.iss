@@ -51,7 +51,7 @@ Name: "{autodesktop}\OBS Creator Assistant Setup"; Filename: "http://127.0.0.1:8
 
 [Run]
 Filename: "{app}\OBS-Creator-Assistant.exe"; Flags: nowait; StatusMsg: "Starting OBS Creator Assistant..."
-Filename: "http://127.0.0.1:8788/"; Description: "Open OBS Creator Assistant setup"; Flags: shellexec postinstall skipifsilent nowait
+Filename: "http://127.0.0.1:8788/"; Description: "Set up Creator Assistant now"; Flags: shellexec postinstall skipifsilent nowait
 
 [UninstallRun]
 Filename: "{app}\OBS-Creator-Assistant.exe"; Parameters: "--stop"; Flags: waituntilterminated; RunOnceId: "StopAssistant"

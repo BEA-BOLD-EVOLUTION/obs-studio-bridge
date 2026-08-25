@@ -11,6 +11,7 @@ import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.
 import { inspectProductionResources } from "./production-readiness.js";
 import { setProgramScene, setSceneSourceVisibility } from "./scene-controls.js";
 import { registerWorkflowTools } from "./workflows.js";
+import { readCreatorSetup } from "./setup-config.js";
 
 const host = "127.0.0.1";
 const port = parseInteger(process.env.BRIDGE_PORT, 8787);
@@ -303,9 +304,19 @@ app.get("/health", async (_req, res) => {
   try {
     await ensureObs();
     const version = await obsCall("GetVersion");
-    res.json({ ok: true, obsConnected: true, obsWebSocketVersion: version.obsWebSocketVersion });
+    res.json({
+      ok: true,
+      obsConnected: true,
+      setupComplete: readCreatorSetup().setupComplete,
+      obsWebSocketVersion: version.obsWebSocketVersion
+    });
   } catch (error) {
-    res.status(503).json({ ok: false, obsConnected: false, error: errorMessage(error) });
+    res.status(503).json({
+      ok: false,
+      obsConnected: false,
+      setupComplete: readCreatorSetup().setupComplete,
+      error: errorMessage(error)
+    });
   }
 });
 

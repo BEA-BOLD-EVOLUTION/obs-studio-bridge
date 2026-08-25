@@ -4,3 +4,4 @@ dist/
 npm-debug.log*
 tunnel-client/control-plane-api-key.txt
 tunnel-client/obs-bridge-authorization.txt
+work-msix/

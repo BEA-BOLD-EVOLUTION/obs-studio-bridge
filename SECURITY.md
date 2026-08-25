@@ -10,7 +10,8 @@ Report vulnerabilities privately to the publisher through the same channel where
 
 ## Credential handling
 
-- Use different values for OBS_WEBSOCKET_PASSWORD and BRIDGE_AUTH_TOKEN.
-- Keep .env and tunnel credential files private.
+- Signed Windows installs generate the bridge token with the Windows cryptographic RNG and protect it with user-scoped DPAPI. The normal creator flow does not create `.env` or tunnel credential files.
+- Use different values for OBS_WEBSOCKET_PASSWORD and BRIDGE_AUTH_TOKEN in developer environments.
+- `.env` and tunnel credential files are supported only by developer/test harnesses and must remain private.
 - Rotate the bridge token after suspected exposure.
 - Do not expose the bridge port directly to the public internet.

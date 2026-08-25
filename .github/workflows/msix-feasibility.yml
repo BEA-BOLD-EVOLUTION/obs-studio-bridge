@@ -1,0 +1,146 @@
+name: MSIX feasibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/msix-feasibility.yml"
+      - "installer/windows/msix/**"
+      - "installer/windows/launcher/**"
+      - "obs-plugin/**"
+      - "src/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    name: Build private MSIX test
+    runs-on: windows-2022
+    steps:
+      - name: Check out Creator Assistant
+        uses: actions/checkout@v7
+        with:
+          path: product
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build and test desktop helper
+        shell: pwsh
+        run: |
+          corepack enable
+          Set-Location product
+          pnpm install --frozen-lockfile
+          pnpm run check
+          pnpm test
+          pnpm prune --prod
+          Get-ChildItem node_modules -Directory -Filter '.bin' -Recurse -Force |
+            Remove-Item -Recurse -Force
+
+      - name: Check out official OBS plugin template
+        uses: actions/checkout@v7
+        with:
+          repository: obsproject/obs-plugintemplate
+          ref: 3e7d7ac3b5342cd7d9b88890b9c70b472d1520fc
+          path: template
+
+      - name: Prepare and build native OBS plugin
+        shell: pwsh
+        working-directory: template
+        env:
+          CI: "true"
+        run: |
+          Copy-Item ../product/obs-plugin/CMakeLists.txt CMakeLists.txt -Force
+          Copy-Item ../product/obs-plugin/buildspec.json buildspec.json -Force
+          Remove-Item src/plugin-main.c -Force
+          Remove-Item data -Recurse -Force
+          Copy-Item ../product/obs-plugin/src/* src -Recurse -Force
+          Copy-Item ../product/obs-plugin/data data -Recurse -Force
+          $presets = Get-Content CMakePresets.json -Raw
+          $presets = $presets.Replace('"ENABLE_FRONTEND_API": false', '"ENABLE_FRONTEND_API": true')
+          $presets = $presets.Replace('"ENABLE_QT": false', '"ENABLE_QT": true')
+          Set-Content CMakePresets.json $presets
+          .github/scripts/Build-Windows.ps1 -Target x64 -Configuration RelWithDebInfo
+
+      - name: Build packaged companion launcher
+        shell: pwsh
+        run: |
+          cmake -S product/installer/windows/launcher -B launcher-build -A x64
+          if ($LASTEXITCODE -ne 0) { throw "Launcher configuration failed with exit code $LASTEXITCODE." }
+          cmake --build launcher-build --config Release
+          if ($LASTEXITCODE -ne 0) { throw "Launcher build failed with exit code $LASTEXITCODE." }
+
+      - name: Download portable Node.js runtime
+        shell: pwsh
+        run: |
+          $nodeVersion = node --version
+          $zipName = "node-$nodeVersion-win-x64.zip"
+          Invoke-WebRequest -Uri "https://nodejs.org/dist/$nodeVersion/$zipName" -OutFile node-runtime.zip
+          Expand-Archive -Path node-runtime.zip -DestinationPath node-runtime
+          $runtimeDir = Get-ChildItem node-runtime -Directory | Select-Object -First 1
+          New-Item -ItemType Directory -Path release-payload/helper/runtime -Force | Out-Null
+          Copy-Item "$($runtimeDir.FullName)/node.exe" release-payload/helper/runtime/node.exe
+
+      - name: Assemble MSIX payload
+        shell: pwsh
+        env:
+          CHATGPT_PLUGIN_URL: ${{ vars.CHATGPT_PLUGIN_URL }}
+        run: |
+          New-Item -ItemType Directory -Path release-payload/helper -Force | Out-Null
+          New-Item -ItemType Directory -Path release-payload/plugin -Force | Out-Null
+          Copy-Item product/dist release-payload/helper/dist -Recurse
+          Copy-Item product/node_modules release-payload/helper/node_modules -Recurse
+          Copy-Item product/package.json release-payload/helper/package.json
+          Copy-Item product/.env.example release-payload/helper/.env.example
+          Copy-Item launcher-build/Release/OBS-Creator-Assistant.exe release-payload/helper/OBS-Creator-Assistant.exe
+          if ($env:CHATGPT_PLUGIN_URL) {
+            (Get-Content release-payload/helper/.env.example -Raw).Replace('CHATGPT_PLUGIN_URL=', "CHATGPT_PLUGIN_URL=$env:CHATGPT_PLUGIN_URL") |
+              Set-Content release-payload/helper/.env.example -Encoding UTF8
+          }
+          $pluginDll = Get-ChildItem template/release/RelWithDebInfo -Filter obs-creator-assistant.dll -File -Recurse | Select-Object -First 1
+          if (-not $pluginDll) { throw 'Native plugin DLL was not produced.' }
+          Copy-Item $pluginDll.FullName release-payload/plugin/obs-creator-assistant.dll
+          Copy-Item product/obs-plugin/data/locale/en-US.ini release-payload/plugin/en-US.ini
+          Copy-Item product/obs-plugin/data/manifest.json release-payload/plugin/manifest.json
+
+      - name: Build and development-sign MSIX
+        shell: pwsh
+        run: |
+          $version = (Get-Content product/package.json -Raw | ConvertFrom-Json).version
+          product/installer/windows/msix/build-msix.ps1 `
+            -PayloadRoot release-payload `
+            -OutputDirectory msix-output `
+            -Version $version `
+            -DevelopmentSign
+
+      - name: Verify MSIX test artifact
+        shell: pwsh
+        run: |
+          $package = 'msix-output/OBS-Creator-Assistant-MSIX-Test.msix'
+          $publicCertificate = 'msix-output/OBS-Creator-Assistant-MSIX-Test.cer'
+          if (-not (Test-Path $publicCertificate)) { throw 'Public test certificate is missing.' }
+          # App Installer evaluates package trust from the local-machine store.
+          $trusted = Import-Certificate -FilePath $publicCertificate -CertStoreLocation Cert:\LocalMachine\TrustedPeople
+          try {
+            $signature = Get-AuthenticodeSignature -LiteralPath $package
+            if ($signature.Status -ne 'Valid') { throw "MSIX signature is invalid: $($signature.StatusMessage)" }
+          } finally {
+            Remove-Item -LiteralPath "Cert:\LocalMachine\TrustedPeople\$($trusted.Thumbprint)" -Force
+          }
+          if (Test-Path msix-output/*.pfx) { throw 'A private signing key must never be uploaded.' }
+
+      - name: Upload private feasibility artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: OBS-Creator-Assistant-MSIX-feasibility
+          path: |
+            msix-output/OBS-Creator-Assistant-MSIX-Test.msix
+            msix-output/OBS-Creator-Assistant-MSIX-Test.msix.sha256
+            msix-output/OBS-Creator-Assistant-MSIX-Test.cer
+            product/docs/MSIX_FEASIBILITY.md
+          if-no-files-found: error

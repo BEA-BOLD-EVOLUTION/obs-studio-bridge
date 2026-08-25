@@ -19,6 +19,11 @@ Do not download installers from mirrors or third-party sites. There is currently
 
 The permanent branded download address is [obs.boldevolution.net/download](https://obs.boldevolution.net/download). It redirects to the official signed installer when one is available and otherwise opens the official release status page.
 
+An experimental Microsoft Store MSIX path is being evaluated separately. It is a
+private feasibility build, not an approved download. See the
+[MSIX feasibility test](docs/MSIX_FEASIBILITY.md) for its security boundaries and
+the decisive OBS plugin-discovery test.
+
 ## Install on Windows
 
 These instructions will apply after an approved, signed release is published:
@@ -28,9 +33,11 @@ These instructions will apply after an approved, signed release is published:
 3. Double-click the installer and approve the Windows prompt.
 4. Reopen OBS Studio and choose **Docks → OBS Creator Assistant**.
 
-That one installer adds both the OBS plugin and the desktop helper, detects the local OBS WebSocket settings, starts the helper automatically with Windows, and opens the connection screen. Existing connection settings are preserved when upgrading.
+That one installer adds both the OBS plugin and the desktop helper, detects the local OBS WebSocket settings, starts the helper automatically with Windows, and opens the first-run wizard. The wizard offers **Program View**, **Viewer View**, or **Both** and keeps ChatGPT account approval as a separate, optional user action. Existing connection settings are preserved when upgrading.
 
 No ZIP extraction, terminal, Node.js installation, token generation, or manual file editing is required.
+
+See [First-run setup](docs/FIRST_RUN_SETUP.md) for the creator flow, encrypted Windows credential storage, authorization boundary, transport policy, and release checklist.
 
 ## Capabilities
 
@@ -354,3 +361,5 @@ pnpm start
 ```
 
 End users should wait for an approved, signed Windows release rather than installing CI artifacts or unsigned packages.
+
+The root PowerShell scripts and `installer/Setup.cmd` are developer/test harnesses only. They deliberately remain available for local integration work but are excluded from the signed installer payload and are not part of creator onboarding.
