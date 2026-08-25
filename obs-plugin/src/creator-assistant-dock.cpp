@@ -1,5 +1,6 @@
 #include "creator-assistant-dock.hpp"
 
+#include <QComboBox>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
@@ -13,6 +14,7 @@
 #include <QPushButton>
 #include <QTimer>
 #include <QUrl>
+#include <QUrlQuery>
 #include <QVBoxLayout>
 
 namespace {
@@ -23,9 +25,9 @@ constexpr auto ClipperSaveUrl = "http://127.0.0.1:8789/clipper/save";
 constexpr auto OnboardingUrl = "http://127.0.0.1:8788/";
 constexpr auto DownloadUrl = "https://obs.boldevolution.net/download";
 
-QNetworkRequest clipperRequest(const char *url)
+QNetworkRequest clipperRequest(const QUrl &url)
 {
-	QNetworkRequest request(QUrl(QString::fromLatin1(url)));
+	QNetworkRequest request(url);
 	request.setRawHeader("X-OBS-Creator-Assistant", "1");
 	request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
 	return request;
@@ -64,20 +66,29 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 	buttons->addWidget(refreshButton);
 	layout->addLayout(buttons);
 
-	auto *divider = new QLabel(tr("MOBILE CLIPPER"), this);
+	auto *divider = new QLabel(tr("CLIPPING"), this);
 	auto dividerFont = divider->font();
 	dividerFont.setBold(true);
 	divider->setFont(dividerFont);
 	layout->addWidget(divider);
 
-	clipperStatus_ = new QLabel(tr("Checking clipper…"), this);
+	auto *modeRow = new QHBoxLayout();
+	auto *modeLabel = new QLabel(tr("Clip source:"), this);
+	clipMode_ = new QComboBox(this);
+	clipMode_->addItem(tr("Program View"), QStringLiteral("program"));
+	clipMode_->addItem(tr("Viewer View"), QStringLiteral("viewer"));
+	modeRow->addWidget(modeLabel);
+	modeRow->addWidget(clipMode_, 1);
+	layout->addLayout(modeRow);
+
+	clipperStatus_ = new QLabel(tr("Checking clipping…"), this);
 	auto clipperFont = clipperStatus_->font();
 	clipperFont.setBold(true);
 	clipperStatus_->setFont(clipperFont);
 	layout->addWidget(clipperStatus_);
 
 	clipperDetails_ = new QLabel(
-		tr("Use AirPlay, software mirroring, or a capture device to put the clipper phone into the dedicated Clipper OBS session."),
+		tr("Program View saves the normal OBS output. Viewer View saves the dedicated phone-view feed with TikTok chat and mobile UI."),
 		this);
 	clipperDetails_->setWordWrap(true);
 	layout->addWidget(clipperDetails_);
@@ -94,7 +105,7 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 	layout->addStretch();
 
 	auto *privacy = new QLabel(
-		tr("ChatGPT connects through the secure Creator Assistant relay. OBS passwords and local settings stay on this computer. TikTok credentials remain on the clipper phone."),
+		tr("ChatGPT connects through the secure Creator Assistant relay. OBS passwords and local settings stay on this computer. TikTok credentials remain on the viewer phone when Viewer View is used."),
 		this);
 	privacy->setWordWrap(true);
 	privacy->setStyleSheet(QStringLiteral("color: palette(mid);"));
@@ -106,6 +117,7 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 		refreshStatus();
 		refreshClipperStatus();
 	});
+	connect(clipMode_, &QComboBox::currentIndexChanged, this, [this] { refreshClipperStatus(); });
 	connect(enableClipperButton_, &QPushButton::clicked, this, [this] { enableClipping(); });
 	connect(clipButton_, &QPushButton::clicked, this, [this] { saveClip(); });
 
@@ -128,6 +140,11 @@ QString CreatorAssistantDock::assistantRoot() const
 QString CreatorAssistantDock::assistantLauncher() const
 {
 	return QDir(assistantRoot()).filePath(QStringLiteral("OBS-Creator-Assistant.exe"));
+}
+
+QString CreatorAssistantDock::selectedClipMode() const
+{
+	return clipMode_ ? clipMode_->currentData().toString() : QStringLiteral("program");
 }
 
 void CreatorAssistantDock::refreshStatus()
@@ -153,7 +170,11 @@ void CreatorAssistantDock::refreshClipperStatus()
 		return;
 
 	clipperRequestPending_ = true;
-	auto *reply = network_.get(clipperRequest(ClipperStatusUrl));
+	QUrl url(QString::fromLatin1(ClipperStatusUrl));
+	QUrlQuery query;
+	query.addQueryItem(QStringLiteral("mode"), selectedClipMode());
+	url.setQuery(query);
+	auto *reply = network_.get(clipperRequest(url));
 	connect(reply, &QNetworkReply::finished, this, [this, reply] {
 		clipperRequestPending_ = false;
 		const QByteArray payload = reply->readAll();
@@ -200,28 +221,34 @@ void CreatorAssistantDock::showClipperStatus(const QByteArray &payload)
 	const bool connected = object.value(QStringLiteral("connected")).toBool(false);
 	const bool replayActive = object.value(QStringLiteral("replayBufferActive")).toBool(false);
 	const QString sceneName = object.value(QStringLiteral("programSceneName")).toString();
+	const QString mode = object.value(QStringLiteral("mode")).toString(selectedClipMode());
 
 	if (!connected) {
 		showClipperDisconnected();
 		return;
 	}
 
-	clipperStatus_->setText(replayActive ? tr("● Clipper ready") : tr("● Clipper connected — buffer off"));
+	const bool viewerMode = mode == QStringLiteral("viewer");
+	clipperStatus_->setText(replayActive ? tr("● Clipping ready") : tr("● Connected — buffer off"));
 	clipperStatus_->setStyleSheet(replayActive ? QStringLiteral("color: #2ea043;")
 					       : QStringLiteral("color: #d29922;"));
 	clipperDetails_->setText(sceneName.isEmpty()
-				 ? tr("Dedicated Clipper OBS is connected.")
-				 : tr("Clipper OBS scene: %1").arg(sceneName));
+				 ? (viewerMode ? tr("Viewer View is connected.") : tr("Program View is connected."))
+				 : (viewerMode ? tr("Viewer View scene: %1").arg(sceneName)
+					       : tr("Program View scene: %1").arg(sceneName)));
 	enableClipperButton_->setEnabled(!replayActive);
 	clipButton_->setEnabled(replayActive);
 }
 
 void CreatorAssistantDock::showClipperDisconnected(const QString &message)
 {
-	clipperStatus_->setText(tr("● Clipper OBS not connected"));
+	const bool viewerMode = selectedClipMode() == QStringLiteral("viewer");
+	clipperStatus_->setText(viewerMode ? tr("● Viewer View not connected") : tr("● Program View not connected"));
 	clipperStatus_->setStyleSheet(QStringLiteral("color: #d29922;"));
 	clipperDetails_->setText(message.isEmpty()
-				 ? tr("Start the dedicated Clipper OBS session and make its phone-view scene live. AirPlay, mirroring, and hardware capture are all supported.")
+				 ? (viewerMode
+					? tr("Start the dedicated Viewer/Clipper OBS session. AirPlay, mirroring, and hardware capture are all supported.")
+					: tr("Connect the main production OBS session to use Program View clipping."))
 				 : message);
 	enableClipperButton_->setEnabled(false);
 	clipButton_->setEnabled(false);
@@ -257,7 +284,10 @@ void CreatorAssistantDock::enableClipping()
 
 	clipperRequestPending_ = true;
 	enableClipperButton_->setEnabled(false);
-	auto *reply = network_.post(clipperRequest(ClipperEnableUrl), QByteArrayLiteral("{}"));
+	QJsonObject body;
+	body.insert(QStringLiteral("mode"), selectedClipMode());
+	auto *reply = network_.post(clipperRequest(QUrl(QString::fromLatin1(ClipperEnableUrl))),
+		QJsonDocument(body).toJson(QJsonDocument::Compact));
 	connect(reply, &QNetworkReply::finished, this, [this, reply] {
 		clipperRequestPending_ = false;
 		const QByteArray payload = reply->readAll();
@@ -279,14 +309,20 @@ void CreatorAssistantDock::saveClip()
 	clipperRequestPending_ = true;
 	clipButton_->setEnabled(false);
 	clipperStatus_->setText(tr("Saving clip…"));
-	auto *reply = network_.post(clipperRequest(ClipperSaveUrl), QByteArrayLiteral("{}"));
-	connect(reply, &QNetworkReply::finished, this, [this, reply] {
+	const QString mode = selectedClipMode();
+	QJsonObject body;
+	body.insert(QStringLiteral("mode"), mode);
+	auto *reply = network_.post(clipperRequest(QUrl(QString::fromLatin1(ClipperSaveUrl))),
+		QJsonDocument(body).toJson(QJsonDocument::Compact));
+	connect(reply, &QNetworkReply::finished, this, [this, reply, mode] {
 		clipperRequestPending_ = false;
 		const QByteArray payload = reply->readAll();
 		if (reply->error() == QNetworkReply::NoError) {
 			clipperStatus_->setText(tr("✓ Clip saved"));
 			clipperStatus_->setStyleSheet(QStringLiteral("color: #2ea043;"));
-			clipperDetails_->setText(tr("Saved the current Clipper OBS replay buffer."));
+			clipperDetails_->setText(mode == QStringLiteral("viewer")
+				? tr("Saved the Viewer View replay buffer.")
+				: tr("Saved the Program View replay buffer."));
 			clipButton_->setEnabled(true);
 			QTimer::singleShot(1500, this, [this] { refreshClipperStatus(); });
 		} else {
