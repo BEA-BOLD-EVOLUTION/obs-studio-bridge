@@ -1,6 +1,8 @@
 #include <windows.h>
+#include <appmodel.h>
 #include <bcrypt.h>
 #include <dpapi.h>
+#include <shellapi.h>
 #include <shlobj.h>
 
 #include <array>
