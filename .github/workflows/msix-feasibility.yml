@@ -124,12 +124,13 @@ jobs:
           $package = 'msix-output/OBS-Creator-Assistant-MSIX-Test.msix'
           $publicCertificate = 'msix-output/OBS-Creator-Assistant-MSIX-Test.cer'
           if (-not (Test-Path $publicCertificate)) { throw 'Public test certificate is missing.' }
-          $trusted = Import-Certificate -FilePath $publicCertificate -CertStoreLocation Cert:\CurrentUser\TrustedPeople
+          # App Installer evaluates package trust from the local-machine store.
+          $trusted = Import-Certificate -FilePath $publicCertificate -CertStoreLocation Cert:\LocalMachine\TrustedPeople
           try {
             $signature = Get-AuthenticodeSignature -LiteralPath $package
             if ($signature.Status -ne 'Valid') { throw "MSIX signature is invalid: $($signature.StatusMessage)" }
           } finally {
-            Remove-Item -LiteralPath "Cert:\CurrentUser\TrustedPeople\$($trusted.Thumbprint)" -Force
+            Remove-Item -LiteralPath "Cert:\LocalMachine\TrustedPeople\$($trusted.Thumbprint)" -Force
           }
           if (Test-Path msix-output/*.pfx) { throw 'A private signing key must never be uploaded.' }
 
