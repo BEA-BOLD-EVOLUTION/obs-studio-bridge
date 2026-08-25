@@ -1,10 +1,14 @@
 [CmdletBinding()]
 param(
     [string]$InstallRoot = "$env:LOCALAPPDATA\OBS Creator Assistant",
-    [switch]$NoDesktopShortcut
+    [switch]$NoDesktopShortcut,
+    [switch]$DeveloperHarness
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $DeveloperHarness) {
+    throw 'This script is a developer/test harness. Build the signed Windows installer for the creator experience.'
+}
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (Test-Path -LiteralPath (Join-Path $ScriptRoot 'dist')) {
     $PackageRoot = $ScriptRoot
@@ -43,7 +47,7 @@ function Read-PackageSetting([string]$Name) {
 }
 
 Write-Host 'OBS Creator Assistant' -ForegroundColor White
-Write-Host 'Creator-friendly setup for OBS automation.' -ForegroundColor DarkGray
+Write-Host 'Developer/test installer harness (not the creator first-run experience).' -ForegroundColor DarkGray
 
 Write-Step '1 of 5  Checking OBS Studio'
 $obsExe = Find-ObsExecutable

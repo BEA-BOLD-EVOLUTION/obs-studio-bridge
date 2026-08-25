@@ -4,6 +4,10 @@ All notable changes to OBS Studio Bridge are documented here.
 
 ## Unreleased - Phase 2
 
+- Added a local first-run wizard with OBS readiness, clipping-mode choices, viewer capture methods, explicit ChatGPT approval, and a Ready state.
+- Added combined Program View and Viewer View clipping while preserving their independent OBS replay buffers.
+- Moved installed-build bridge tokens from plaintext environment files to user-scoped Windows DPAPI storage.
+- Kept PowerShell and tunnel scripts as explicitly labeled developer/test harnesses outside the signed release payload.
 - Added confirmed, ordered dual-PC production startup with post-start verification.
 - Added durable account-owned production sessions that record captured state, completed steps, restoration attempts, and failures.
 - Added reverse-order restoration when startup fails and when the creator stops a production session.

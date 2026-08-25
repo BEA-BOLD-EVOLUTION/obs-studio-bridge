@@ -4,10 +4,11 @@
 
 Give creators one `CLIP THIS` workflow with a choice of what perspective to save.
 
-V1 supports two clip sources:
+V1 supports two clip sources and a combined action:
 
 - **Program View** — saves the creator's normal OBS program output.
 - **Viewer View** — saves the authentic TikTok mobile viewer perspective, including chat, gifts, reactions, and TikTok's current mobile UI.
+- **Both** — saves the independent Program View and Viewer View replay buffers together.
 
 Viewer View is optional. Creators who do not want or need a separate viewer phone can use Program View only.
 
@@ -148,7 +149,7 @@ CLIPPER_CONTROL_PORT=8789
 Phone OS and transport are Viewer View setup metadata, not clipping-engine dependencies.
 
 ```ts
-type ClipMode = 'program' | 'viewer';
+type ClipMode = 'program' | 'viewer' | 'both';
 
 type ViewerCaptureMethod =
   | 'airplay'
@@ -157,7 +158,7 @@ type ViewerCaptureMethod =
   | 'other';
 ```
 
-`CLIP THIS` targets the replay buffer associated with the currently selected Clip Mode.
+`CLIP THIS` targets the replay buffer associated with the currently selected Clip Mode. For `both`, both buffers must be active before either save is requested.
 
 ## Safety and account boundaries
 

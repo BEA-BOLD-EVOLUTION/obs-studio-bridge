@@ -1,10 +1,11 @@
 import express, { type Request, type Response } from "express";
 import { OBSWebSocket } from "obs-websocket-js";
+import type { ClipMode, CreatorSetup } from "./setup-config.js";
 
 const host = "127.0.0.1";
 const port = Number.parseInt(process.env.CLIPPER_CONTROL_PORT || "8789", 10) || 8789;
 
-type ClipMode = "program" | "viewer";
+type SingleClipMode = Exclude<ClipMode, "both">;
 
 type ObsTarget = {
   obs: OBSWebSocket;
@@ -27,7 +28,7 @@ function makeTarget(url: string, password: string): ObsTarget {
   return target;
 }
 
-const targets: Record<ClipMode, ObsTarget> = {
+const targets: Record<SingleClipMode, ObsTarget> = {
   program: makeTarget(
     process.env.OBS_WEBSOCKET_URL?.trim() || "ws://127.0.0.1:4455",
     process.env.OBS_WEBSOCKET_PASSWORD ?? ""
@@ -43,10 +44,14 @@ function errorMessage(error: unknown): string {
 }
 
 function parseMode(value: unknown): ClipMode {
-  return value === "viewer" ? "viewer" : "program";
+  return value === "viewer" || value === "both" ? value : "program";
 }
 
-async function ensureObs(mode: ClipMode): Promise<ObsTarget> {
+export function clipTargetsForMode(mode: ClipMode): SingleClipMode[] {
+  return mode === "both" ? ["program", "viewer"] : [mode];
+}
+
+async function ensureObs(mode: SingleClipMode): Promise<ObsTarget> {
   const target = targets[mode];
   if (target.connected) return target;
   if (!target.connecting) {
@@ -58,7 +63,7 @@ async function ensureObs(mode: ClipMode): Promise<ObsTarget> {
   return target;
 }
 
-async function obsCall(mode: ClipMode, requestType: string, requestData?: Record<string, unknown>): Promise<any> {
+async function obsCall(mode: SingleClipMode, requestType: string, requestData?: Record<string, unknown>): Promise<any> {
   const target = await ensureObs(mode);
   return target.obs.call(requestType as any, requestData as any);
 }
@@ -71,7 +76,7 @@ function requireNativeDock(req: Request, res: Response): boolean {
   return true;
 }
 
-async function statusPayload(mode: ClipMode): Promise<Record<string, unknown>> {
+async function singleStatusPayload(mode: SingleClipMode): Promise<Record<string, unknown>> {
   const [version, replay, scene] = await Promise.all([
     obsCall(mode, "GetVersion"),
     obsCall(mode, "GetReplayBufferStatus"),
@@ -86,6 +91,27 @@ async function statusPayload(mode: ClipMode): Promise<Record<string, unknown>> {
     programSceneName: scene.currentProgramSceneName,
     obsUrl: targets[mode].url
   };
+}
+
+async function statusPayload(mode: ClipMode): Promise<Record<string, unknown>> {
+  if (mode !== "both") return singleStatusPayload(mode);
+  const [program, viewer] = await Promise.all([singleStatusPayload("program"), singleStatusPayload("viewer")]);
+  return {
+    ok: true,
+    mode,
+    connected: true,
+    replayBufferActive: Boolean(program.replayBufferActive) && Boolean(viewer.replayBufferActive),
+    program,
+    viewer
+  };
+}
+
+export async function applyCreatorSetup(config: CreatorSetup): Promise<void> {
+  if (targets.viewer.url === config.viewerObsUrl) return;
+  await targets.viewer.obs.disconnect().catch(() => undefined);
+  targets.viewer.connected = false;
+  targets.viewer.connecting = undefined;
+  targets.viewer.url = config.viewerObsUrl;
 }
 
 export function startClipperControlServer(): void {
@@ -105,7 +131,7 @@ export function startClipperControlServer(): void {
         connected: false,
         replayBufferActive: false,
         error: errorMessage(error),
-        obsUrl: targets[mode].url
+        obsUrls: clipTargetsForMode(mode).map(target => targets[target].url)
       });
     }
   });
@@ -114,8 +140,10 @@ export function startClipperControlServer(): void {
     if (!requireNativeDock(req, res)) return;
     const mode = parseMode(req.body?.mode);
     try {
-      const before = await obsCall(mode, "GetReplayBufferStatus");
-      if (!Boolean(before.outputActive)) await obsCall(mode, "StartReplayBuffer");
+      for (const target of clipTargetsForMode(mode)) {
+        const before = await obsCall(target, "GetReplayBufferStatus");
+        if (!Boolean(before.outputActive)) await obsCall(target, "StartReplayBuffer");
+      }
       res.json(await statusPayload(mode));
     } catch (error) {
       res.status(500).json({ ok: false, mode, error: errorMessage(error) });
@@ -126,12 +154,15 @@ export function startClipperControlServer(): void {
     if (!requireNativeDock(req, res)) return;
     const mode = parseMode(req.body?.mode);
     try {
-      const replay = await obsCall(mode, "GetReplayBufferStatus");
-      if (!Boolean(replay.outputActive)) {
-        res.status(409).json({ ok: false, mode, error: `${mode === "viewer" ? "Viewer" : "Program"} replay buffer is not active.` });
-        return;
+      const selectedTargets = clipTargetsForMode(mode);
+      for (const target of selectedTargets) {
+        const replay = await obsCall(target, "GetReplayBufferStatus");
+        if (!Boolean(replay.outputActive)) {
+          res.status(409).json({ ok: false, mode, error: `${target === "viewer" ? "Viewer" : "Program"} replay buffer is not active.` });
+          return;
+        }
       }
-      await obsCall(mode, "SaveReplayBuffer");
+      await Promise.all(selectedTargets.map(target => obsCall(target, "SaveReplayBuffer")));
       res.json({
         ok: true,
         mode,
