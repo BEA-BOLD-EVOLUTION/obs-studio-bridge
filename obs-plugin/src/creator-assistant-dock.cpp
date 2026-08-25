@@ -17,8 +17,19 @@
 
 namespace {
 constexpr auto HealthUrl = "http://127.0.0.1:8787/health";
+constexpr auto ClipperStatusUrl = "http://127.0.0.1:8789/clipper/status";
+constexpr auto ClipperEnableUrl = "http://127.0.0.1:8789/clipper/enable";
+constexpr auto ClipperSaveUrl = "http://127.0.0.1:8789/clipper/save";
 constexpr auto OnboardingUrl = "http://127.0.0.1:8788/";
 constexpr auto DownloadUrl = "https://obs.boldevolution.net/download";
+
+QNetworkRequest clipperRequest(const char *url)
+{
+	QNetworkRequest request(QUrl(QString::fromLatin1(url)));
+	request.setRawHeader("X-OBS-Creator-Assistant", "1");
+	request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+	return request;
+}
 }
 
 CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
@@ -52,10 +63,38 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 	buttons->addWidget(openButton_);
 	buttons->addWidget(refreshButton);
 	layout->addLayout(buttons);
+
+	auto *divider = new QLabel(tr("MOBILE CLIPPER"), this);
+	auto dividerFont = divider->font();
+	dividerFont.setBold(true);
+	divider->setFont(dividerFont);
+	layout->addWidget(divider);
+
+	clipperStatus_ = new QLabel(tr("Checking clipper…"), this);
+	auto clipperFont = clipperStatus_->font();
+	clipperFont.setBold(true);
+	clipperStatus_->setFont(clipperFont);
+	layout->addWidget(clipperStatus_);
+
+	clipperDetails_ = new QLabel(
+		tr("Use AirPlay, software mirroring, or a capture device to put the clipper phone into the dedicated Clipper OBS session."),
+		this);
+	clipperDetails_->setWordWrap(true);
+	layout->addWidget(clipperDetails_);
+
+	auto *clipperButtons = new QHBoxLayout();
+	enableClipperButton_ = new QPushButton(tr("Enable Clipping"), this);
+	clipButton_ = new QPushButton(tr("CLIP THIS"), this);
+	clipButton_->setMinimumHeight(42);
+	clipButton_->setEnabled(false);
+	clipperButtons->addWidget(enableClipperButton_);
+	clipperButtons->addWidget(clipButton_);
+	layout->addLayout(clipperButtons);
+
 	layout->addStretch();
 
 	auto *privacy = new QLabel(
-		tr("ChatGPT connects through the secure Creator Assistant relay. OBS passwords and local settings stay on this computer."),
+		tr("ChatGPT connects through the secure Creator Assistant relay. OBS passwords and local settings stay on this computer. TikTok credentials remain on the clipper phone."),
 		this);
 	privacy->setWordWrap(true);
 	privacy->setStyleSheet(QStringLiteral("color: palette(mid);"));
@@ -63,13 +102,22 @@ CreatorAssistantDock::CreatorAssistantDock(QWidget *parent) : QWidget(parent)
 
 	connect(startButton_, &QPushButton::clicked, this, [this] { startAssistant(); });
 	connect(openButton_, &QPushButton::clicked, this, [this] { openAssistant(); });
-	connect(refreshButton, &QPushButton::clicked, this, [this] { refreshStatus(); });
+	connect(refreshButton, &QPushButton::clicked, this, [this] {
+		refreshStatus();
+		refreshClipperStatus();
+	});
+	connect(enableClipperButton_, &QPushButton::clicked, this, [this] { enableClipping(); });
+	connect(clipButton_, &QPushButton::clicked, this, [this] { saveClip(); });
 
 	refreshTimer_ = new QTimer(this);
 	refreshTimer_->setInterval(3000);
-	connect(refreshTimer_, &QTimer::timeout, this, [this] { refreshStatus(); });
+	connect(refreshTimer_, &QTimer::timeout, this, [this] {
+		refreshStatus();
+		refreshClipperStatus();
+	});
 	refreshTimer_->start();
 	refreshStatus();
+	refreshClipperStatus();
 }
 
 QString CreatorAssistantDock::assistantRoot() const
@@ -95,6 +143,26 @@ void CreatorAssistantDock::refreshStatus()
 			showConnected(reply->readAll());
 		else
 			showDisconnected();
+		reply->deleteLater();
+	});
+}
+
+void CreatorAssistantDock::refreshClipperStatus()
+{
+	if (clipperRequestPending_)
+		return;
+
+	clipperRequestPending_ = true;
+	auto *reply = network_.get(clipperRequest(ClipperStatusUrl));
+	connect(reply, &QNetworkReply::finished, this, [this, reply] {
+		clipperRequestPending_ = false;
+		const QByteArray payload = reply->readAll();
+		if (reply->error() == QNetworkReply::NoError)
+			showClipperStatus(payload);
+		else {
+			const auto object = QJsonDocument::fromJson(payload).object();
+			showClipperDisconnected(object.value(QStringLiteral("error")).toString());
+		}
 		reply->deleteLater();
 	});
 }
@@ -126,6 +194,39 @@ void CreatorAssistantDock::showDisconnected()
 	openButton_->setText(installed ? tr("Open Setup") : tr("Install Assistant"));
 }
 
+void CreatorAssistantDock::showClipperStatus(const QByteArray &payload)
+{
+	const auto object = QJsonDocument::fromJson(payload).object();
+	const bool connected = object.value(QStringLiteral("connected")).toBool(false);
+	const bool replayActive = object.value(QStringLiteral("replayBufferActive")).toBool(false);
+	const QString sceneName = object.value(QStringLiteral("programSceneName")).toString();
+
+	if (!connected) {
+		showClipperDisconnected();
+		return;
+	}
+
+	clipperStatus_->setText(replayActive ? tr("● Clipper ready") : tr("● Clipper connected — buffer off"));
+	clipperStatus_->setStyleSheet(replayActive ? QStringLiteral("color: #2ea043;")
+					       : QStringLiteral("color: #d29922;"));
+	clipperDetails_->setText(sceneName.isEmpty()
+				 ? tr("Dedicated Clipper OBS is connected.")
+				 : tr("Clipper OBS scene: %1").arg(sceneName));
+	enableClipperButton_->setEnabled(!replayActive);
+	clipButton_->setEnabled(replayActive);
+}
+
+void CreatorAssistantDock::showClipperDisconnected(const QString &message)
+{
+	clipperStatus_->setText(tr("● Clipper OBS not connected"));
+	clipperStatus_->setStyleSheet(QStringLiteral("color: #d29922;"));
+	clipperDetails_->setText(message.isEmpty()
+				 ? tr("Start the dedicated Clipper OBS session and make its phone-view scene live. AirPlay, mirroring, and hardware capture are all supported.")
+				 : message);
+	enableClipperButton_->setEnabled(false);
+	clipButton_->setEnabled(false);
+}
+
 void CreatorAssistantDock::startAssistant()
 {
 	const QString launcher = assistantLauncher();
@@ -136,7 +237,10 @@ void CreatorAssistantDock::startAssistant()
 
 	QProcess::startDetached(launcher, {}, assistantRoot());
 	status_->setText(tr("Starting…"));
-	QTimer::singleShot(1500, this, [this] { refreshStatus(); });
+	QTimer::singleShot(1500, this, [this] {
+		refreshStatus();
+		refreshClipperStatus();
+	});
 }
 
 void CreatorAssistantDock::openAssistant()
@@ -146,3 +250,52 @@ void CreatorAssistantDock::openAssistant()
 		QUrl(QString::fromLatin1(installed ? OnboardingUrl : DownloadUrl)));
 }
 
+void CreatorAssistantDock::enableClipping()
+{
+	if (clipperRequestPending_)
+		return;
+
+	clipperRequestPending_ = true;
+	enableClipperButton_->setEnabled(false);
+	auto *reply = network_.post(clipperRequest(ClipperEnableUrl), QByteArrayLiteral("{}"));
+	connect(reply, &QNetworkReply::finished, this, [this, reply] {
+		clipperRequestPending_ = false;
+		const QByteArray payload = reply->readAll();
+		if (reply->error() == QNetworkReply::NoError)
+			showClipperStatus(payload);
+		else {
+			const auto object = QJsonDocument::fromJson(payload).object();
+			showClipperDisconnected(object.value(QStringLiteral("error")).toString());
+		}
+		reply->deleteLater();
+	});
+}
+
+void CreatorAssistantDock::saveClip()
+{
+	if (clipperRequestPending_)
+		return;
+
+	clipperRequestPending_ = true;
+	clipButton_->setEnabled(false);
+	clipperStatus_->setText(tr("Saving clip…"));
+	auto *reply = network_.post(clipperRequest(ClipperSaveUrl), QByteArrayLiteral("{}"));
+	connect(reply, &QNetworkReply::finished, this, [this, reply] {
+		clipperRequestPending_ = false;
+		const QByteArray payload = reply->readAll();
+		if (reply->error() == QNetworkReply::NoError) {
+			clipperStatus_->setText(tr("✓ Clip saved"));
+			clipperStatus_->setStyleSheet(QStringLiteral("color: #2ea043;"));
+			clipperDetails_->setText(tr("Saved the current Clipper OBS replay buffer."));
+			clipButton_->setEnabled(true);
+			QTimer::singleShot(1500, this, [this] { refreshClipperStatus(); });
+		} else {
+			const auto object = QJsonDocument::fromJson(payload).object();
+			clipperStatus_->setText(tr("Clip failed"));
+			clipperStatus_->setStyleSheet(QStringLiteral("color: #cf222e;"));
+			clipperDetails_->setText(object.value(QStringLiteral("error")).toString(tr("Could not save the clip.")));
+			QTimer::singleShot(1500, this, [this] { refreshClipperStatus(); });
+		}
+		reply->deleteLater();
+	});
+}
