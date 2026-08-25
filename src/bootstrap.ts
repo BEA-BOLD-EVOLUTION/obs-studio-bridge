@@ -45,6 +45,9 @@ function ensureConfiguration(): void {
   const lines = [
     `OBS_WEBSOCKET_URL=ws://127.0.0.1:${obsPort}`,
     `OBS_WEBSOCKET_PASSWORD=${JSON.stringify(obsPassword)}`,
+    "CLIPPER_OBS_WEBSOCKET_URL=ws://127.0.0.1:4456",
+    "CLIPPER_OBS_WEBSOCKET_PASSWORD=",
+    "CLIPPER_CONTROL_PORT=8789",
     `BRIDGE_AUTH_TOKEN=${bridgeToken}`,
     "BRIDGE_PORT=8787",
     "ONBOARDING_PORT=8788",
@@ -68,6 +71,7 @@ process.once("SIGINT", () => process.exit(0));
 process.once("SIGTERM", () => process.exit(0));
 
 await import("./server.js");
+const { startClipperControlServer } = await import("./clipper-server.js");
+startClipperControlServer();
 const { startRelayClient } = await import("./relay-client.js");
 startRelayClient();
-
