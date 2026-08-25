@@ -1,52 +1,91 @@
-# Mobile Clipper Architecture
+# Clipping Architecture
 
 ## Goal
 
-Capture TikTok LIVE from the viewer perspective so clips include the authentic mobile LIVE presentation, including chat, gifts, reactions, and TikTok's current mobile interface.
+Give creators one `CLIP THIS` workflow with a choice of what perspective to save.
 
-The phone does not record the clip. The phone only displays the LIVE from a separate clipper/viewer account. A dedicated Clipper OBS session captures that phone feed and maintains the rolling replay buffer.
+V1 supports two clip sources:
 
-## Why Clipper OBS is separate
+- **Program View** — saves the creator's normal OBS program output.
+- **Viewer View** — saves the authentic TikTok mobile viewer perspective, including chat, gifts, reactions, and TikTok's current mobile UI.
+
+Viewer View is optional. Creators who do not want or need a separate viewer phone can use Program View only.
+
+## Why the two modes use different OBS roles
 
 OBS's built-in Replay Buffer records the current OBS program output. It does not independently buffer an arbitrary source while another scene is being used for production.
 
-Therefore V1 uses two OBS roles:
+Therefore:
 
-`Production OBS -> creator program -> TikTok LIVE Studio`
+`Program View -> Production OBS -> replay buffer -> Clip This`
 
-`Clipper phone -> AirPlay / mirroring / capture device -> Clipper OBS -> replay buffer -> Clip This`
+`Viewer View -> viewer phone -> AirPlay / mirroring / capture device -> dedicated Viewer/Clipper OBS -> replay buffer -> Clip This`
 
-The two roles may run on the same computer or on separate computers. Keeping them separate prevents the mobile viewer feed from replacing or contaminating the creator's production program.
+The dedicated Viewer/Clipper OBS prevents the mobile viewer feed from replacing or contaminating the production program.
 
-## Design principle
+## Creator choice
 
-OBS Creator Assistant must not couple clipping to one phone platform or one transport.
+The OBS Creator Assistant dock exposes a **Clip source** selector:
 
-All supported capture methods resolve to the same abstraction:
+```text
+CLIPPING
 
-`Phone viewer feed -> dedicated Clipper OBS program -> replay buffer -> Clip This`
+Clip source: [ Program View ▼ ]
 
-The clipping workflow works identically after the phone feed reaches Clipper OBS.
+● Clipping ready
+Program View scene: Main Camera
 
-## Supported capture methods
+[ Enable Clipping ] [ CLIP THIS ]
+```
 
-### AirPlay
+or:
+
+```text
+CLIPPING
+
+Clip source: [ Viewer View ▼ ]
+
+● Clipping ready
+Viewer View scene: Phone Viewer
+
+[ Enable Clipping ] [ CLIP THIS ]
+```
+
+The creator can switch between modes. Each mode has its own replay-buffer readiness state.
+
+## Program View
+
+Program View uses the creator's existing Production OBS connection.
+
+Use this when the creator wants a clean clip of the content they are producing without TikTok's viewer-side interface.
+
+No second phone or second OBS session is required.
+
+## Viewer View
+
+Viewer View captures TikTok LIVE from a separate viewer/clipper account on a phone.
+
+The phone does not record the clip. It only displays the LIVE. A dedicated Viewer/Clipper OBS session captures the phone feed and maintains its own replay buffer.
+
+### Supported phone capture methods
+
+#### AirPlay
 
 Primary software-only path for iPhone -> Mac when a usable AirPlay receiver/mirroring workflow is available.
 
-### Software mirroring
+#### Software mirroring
 
-First-class supported method, not a later add-on. Any mirroring application or operating-system feature that produces a capturable phone display can be used.
+First-class supported method. Any mirroring application or operating-system feature that produces a capturable phone display can be used.
 
-### Hardware video capture
+#### Hardware video capture
 
-Phone video output -> adapter/cable -> HDMI capture device -> USB -> computer -> Clipper OBS Video Capture Device.
+Phone video output -> adapter/cable -> HDMI capture device -> USB -> computer -> Viewer/Clipper OBS Video Capture Device.
 
 This is the platform-neutral fallback when AirPlay or software mirroring is unavailable, unstable, or undesirable.
 
-## Supported combinations
+### Supported combinations
 
-| Computer | Clipper phone | Supported paths |
+| Computer | Viewer phone | Supported paths |
 | --- | --- | --- |
 | Mac | iPhone | AirPlay, software mirroring, hardware capture |
 | Mac | Android | software mirroring, hardware capture |
@@ -55,52 +94,50 @@ This is the platform-neutral fallback when AirPlay or software mirroring is unav
 
 The setup UI should recommend a likely-good method but must not prevent another supported method from being selected.
 
-## V1 creator workflow
+## V1 workflow
 
-1. Creator signs into a separate TikTok clipper/viewer account on a phone.
-2. Clipper account opens the creator's LIVE in the TikTok mobile app.
-3. Creator gets the phone display into a dedicated Clipper OBS session using AirPlay, software mirroring, or hardware capture.
-4. The phone-view scene is made the Clipper OBS program scene.
-5. Clipper OBS WebSocket runs on a separate endpoint from Production OBS. Default V1 port: `4456`.
-6. Creator Assistant verifies that Clipper OBS is connected.
-7. Creator Assistant shows the active Clipper OBS program scene.
-8. Creator presses `Enable Clipping` once to start the dedicated replay buffer.
+### Program View
+
+1. Creator runs the normal OBS production.
+2. Creator selects `Program View` in OBS Creator Assistant.
+3. Creator Assistant verifies the Production OBS connection and replay-buffer state.
+4. Creator presses `Enable Clipping` if needed.
+5. Creator presses `CLIP THIS` whenever a moment should be saved.
+6. Creator Assistant saves the Production OBS replay buffer.
+
+### Viewer View
+
+1. Creator signs into a separate TikTok viewer/clipper account on a phone.
+2. Viewer account opens the creator's LIVE in the TikTok mobile app.
+3. Creator gets the phone display into a dedicated Viewer/Clipper OBS session using AirPlay, software mirroring, or hardware capture.
+4. The phone-view scene is made the Viewer/Clipper OBS program scene.
+5. Viewer/Clipper OBS WebSocket runs on a separate endpoint from Production OBS. Default V1 port: `4456`.
+6. Creator selects `Viewer View` in OBS Creator Assistant.
+7. Creator Assistant verifies that Viewer/Clipper OBS is connected and shows its active program scene.
+8. Creator presses `Enable Clipping` if needed.
 9. Creator presses `CLIP THIS` whenever a moment should be saved.
-10. Creator Assistant calls Clipper OBS `SaveReplayBuffer` and confirms the clip was saved.
-
-## V1 dock UI
-
-```text
-MOBILE CLIPPER
-
-● Clipper ready
-Clipper OBS scene: Phone Viewer
-
-[ Enable Clipping ] [      CLIP THIS      ]
-```
-
-If Clipper OBS is unavailable, the dock identifies the blocking condition instead of silently saving the production output.
+10. Creator Assistant saves the Viewer/Clipper OBS replay buffer.
 
 ## Local control boundary
 
-The local companion exposes Clipper OBS controls only on `127.0.0.1` using a separate control port (default `8789`). Native dock requests include a custom `X-OBS-Creator-Assistant` header so ordinary cross-origin browser requests cannot invoke clip actions as simple requests.
+The local companion exposes clipping controls only on `127.0.0.1` using a separate control port (default `8789`). Native dock requests include a custom `X-OBS-Creator-Assistant` header so ordinary cross-origin browser requests cannot invoke clip actions as simple requests.
 
 Supported local actions:
 
-- Read Clipper OBS connection, scene, and replay-buffer status.
-- Start the Clipper OBS replay buffer.
-- Save the current Clipper OBS replay buffer.
+- Read replay-buffer status for the selected clip source.
+- Start the selected source's replay buffer.
+- Save the selected source's replay buffer.
 
 TikTok credentials are never passed to OBS Creator Assistant.
 
 ## Configuration
 
 ```env
-# Production OBS
+# Program View / Production OBS
 OBS_WEBSOCKET_URL=ws://127.0.0.1:4455
 OBS_WEBSOCKET_PASSWORD=
 
-# Dedicated viewer-perspective clipper
+# Viewer View / dedicated Viewer-Clipper OBS
 CLIPPER_OBS_WEBSOCKET_URL=ws://127.0.0.1:4456
 CLIPPER_OBS_WEBSOCKET_PASSWORD=
 CLIPPER_CONTROL_PORT=8789
@@ -108,25 +145,27 @@ CLIPPER_CONTROL_PORT=8789
 
 ## Capture-method abstraction
 
-Phone OS and transport are setup metadata, not clipping-engine dependencies.
+Phone OS and transport are Viewer View setup metadata, not clipping-engine dependencies.
 
 ```ts
-type MobileClipperCaptureMethod =
+type ClipMode = 'program' | 'viewer';
+
+type ViewerCaptureMethod =
   | 'airplay'
   | 'software_mirroring'
   | 'hardware_capture'
   | 'other';
 ```
 
-`CLIP THIS` always targets the dedicated Clipper OBS replay buffer regardless of capture method.
+`CLIP THIS` targets the replay buffer associated with the currently selected Clip Mode.
 
 ## Safety and account boundaries
 
 - Creator Assistant does not log into TikTok.
 - Creator Assistant does not store TikTok passwords or session credentials.
 - Creator Assistant does not start or end a TikTok LIVE.
-- The clipper account remains controlled by the creator on the phone.
-- Production OBS and Clipper OBS remain separate outputs.
+- A Viewer View clipper account remains controlled by the creator on the phone.
+- Production OBS and Viewer/Clipper OBS remain separate outputs.
 
 ## Future LiveIQ integration
 
@@ -134,6 +173,8 @@ Manual and automatic clipping should converge on the same save/export pipeline.
 
 - Manual: creator presses `CLIP THIS`.
 - Automatic: LiveIQ identifies a high-interest timestamp and requests or marks a candidate clip.
+
+LiveIQ can eventually respect the creator's preferred clip source or generate both perspectives when both buffers are available.
 
 LiveIQ remains the intelligence layer; OBS Creator Assistant remains the local capture/control layer.
 
@@ -145,4 +186,4 @@ LiveIQ remains the intelligence layer; OBS Creator Assistant remains the local c
 - Uploading clips automatically.
 - AI trimming or caption generation.
 
-Those can be layered onto the saved clip workflow later without changing the capture-method abstraction.
+Those can be layered onto the saved clip workflow later without changing the clip-source abstraction.
