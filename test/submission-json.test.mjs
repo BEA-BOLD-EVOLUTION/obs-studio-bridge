@@ -2,6 +2,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+test("ChatGPT submission metadata includes the embedded creator dashboard tools", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+
+  assert.equal(submission.tools.obs_get_dashboard_state.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.obs_open_dashboard.annotations.readOnlyHint, true);
+  assert.match(submission.app_info.description, /creator/i);
+});
+
 test("ChatGPT submission metadata includes the Phase 2 virtual camera tools", async () => {
   const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
   const submission = JSON.parse(raw);

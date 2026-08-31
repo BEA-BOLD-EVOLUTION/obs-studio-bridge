@@ -4,10 +4,26 @@
   "app_info": {
     "display_name": "OBS Creator Assistant",
     "subtitle": "Control OBS from ChatGPT",
-    "description": "OBS Creator Assistant securely connects ChatGPT to a creator's own OBS Studio computer so they can inspect OBS, switch scenes, share a screen or window, run AI transitions, and execute creator-defined LIVE workflows.",
+    "description": "OBS Creator Assistant gives non-technical creators a safe, plain-language way to keep up with streaming formats and trends. It securely connects ChatGPT to the creator's own OBS Studio computer so they can use an embedded live dashboard, change what viewers see, share a screen or window, run AI transitions, and execute creator-defined LIVE workflows without learning OBS internals.",
     "category": "PRODUCTIVITY"
   },
   "tools": {
+    "obs_get_dashboard_state": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Only retrieves creator-owned computers, OBS connection and output status, and scene names for the embedded dashboard.",
+        "open_world_justification": "Reads private account and OBS state without publishing content or changing external systems.",
+        "destructive_justification": "Does not change OBS scenes, outputs, configuration, or account data."
+      }
+    },
+    "obs_open_dashboard": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Renders the creator's private dashboard from the same read-only computer, status, and scene snapshot.",
+        "open_world_justification": "Displays private creator-owned OBS state inside ChatGPT and does not publish content.",
+        "destructive_justification": "Opening the dashboard makes no changes to OBS or account data."
+      }
+    },
     "obs_pair_computer": {
       "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {

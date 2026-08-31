@@ -2,6 +2,8 @@
 
 OBS Creator Assistant connects OBS Studio to ChatGPT through a secure local companion and a native OBS dock.
 
+The ChatGPT app also includes an embedded **Creator Dashboard** designed for non-technical creators who want to keep up with streaming formats and trends without learning OBS internals. Ask “Open my OBS Creator Dashboard” to see linked computers, live connection and output state, one-tap viewer choices, and guided creator shortcuts without leaving the conversation. Live mode avoids text entry; setup and naming stay behind Configure mode.
+
 ## Release status
 
 The Windows installer is temporarily unavailable. The unsigned v1.3.0 installer was withdrawn after antivirus warnings.

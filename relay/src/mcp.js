@@ -4,6 +4,13 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { dispatchVirtualCameraCommand } from "./virtual-camera.js";
+import {
+  DASHBOARD_MIME_TYPE,
+  DASHBOARD_URI,
+  buildDashboardSnapshot,
+  dashboardHtml,
+  dashboardResult
+} from "./dashboard.js";
 
 function result(value) {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
@@ -57,7 +64,81 @@ export function createCreatorMcpServer({
   inspectDualPcSessionHealth,
   updateDualPcProduction
 }) {
-  const server = new McpServer({ name: "obs-creator-assistant", version: "0.5.0" });
+  const server = new McpServer({ name: "obs-creator-assistant", version: "0.6.0" });
+
+  const dashboardSnapshot = deviceId => buildDashboardSnapshot({
+    accessToken,
+    deviceId,
+    listDevices,
+    dispatchCommand
+  });
+
+  server.registerResource("obs-creator-dashboard", DASHBOARD_URI, {}, async () => ({
+    contents: [{
+      uri: DASHBOARD_URI,
+      mimeType: DASHBOARD_MIME_TYPE,
+      text: dashboardHtml,
+      _meta: {
+        ui: {
+          prefersBorder: false,
+          csp: { connectDomains: [], resourceDomains: [] }
+        },
+        "openai/widgetDescription": "Interactive OBS Creator Dashboard showing linked computers, connection and output status, scenes, and creator shortcuts.",
+        "openai/widgetPrefersBorder": false,
+        "openai/widgetCSP": { connect_domains: [], resource_domains: [] }
+      }
+    }]
+  }));
+
+  server.registerTool("obs_get_dashboard_state", {
+    title: "Refresh OBS Creator Dashboard",
+    description: "Use this when the creator or dashboard needs one current, read-only snapshot of linked computers, OBS output state, and scenes.",
+    inputSchema: { deviceId: z.string().uuid().optional() },
+    outputSchema: {
+      stateVersion: z.number().int(),
+      updatedAt: z.string(),
+      selectedDeviceId: z.string().uuid().nullable(),
+      devices: z.array(z.object({
+        id: z.string().uuid(),
+        name: z.string(),
+        online: z.boolean(),
+        isDefault: z.boolean(),
+        productionRole: z.string().nullable(),
+        lastSeenAt: z.string().nullable()
+      })),
+      connection: z.object({ state: z.enum(["connected", "offline", "unpaired"]), label: z.string(), detail: z.string() }),
+      obs: z.object({ version: z.string().nullable(), webSocketVersion: z.string().nullable(), currentScene: z.string().nullable() }),
+      output: z.object({
+        streaming: z.boolean().nullable(),
+        recording: z.boolean().nullable(),
+        replayBuffer: z.boolean().nullable(),
+        virtualCamera: z.boolean().nullable()
+      }),
+      scenes: z.array(z.object({ name: z.string(), current: z.boolean() })),
+      warnings: z.array(z.string())
+    },
+    annotations: readOnly,
+    _meta: {
+      ui: { visibility: ["model", "app"] },
+      "openai/widgetAccessible": true,
+      "openai/toolInvocation/invoking": "Refreshing OBS…",
+      "openai/toolInvocation/invoked": "OBS dashboard refreshed"
+    }
+  }, async ({ deviceId }) => dashboardResult(await dashboardSnapshot(deviceId)));
+
+  server.registerTool("obs_open_dashboard", {
+    title: "Open OBS Creator Dashboard",
+    description: "Use this when the creator asks to open, show, or use their OBS dashboard. Renders the interactive dashboard for an optional linked computer.",
+    inputSchema: { deviceId: z.string().uuid().optional() },
+    annotations: readOnly,
+    _meta: {
+      ui: { resourceUri: DASHBOARD_URI, visibility: ["model"] },
+      "openai/outputTemplate": DASHBOARD_URI,
+      "openai/widgetAccessible": true,
+      "openai/toolInvocation/invoking": "Opening OBS dashboard…",
+      "openai/toolInvocation/invoked": "OBS dashboard ready"
+    }
+  }, async ({ deviceId }) => dashboardResult(await dashboardSnapshot(deviceId), { rendered: true }));
 
   server.registerTool("obs_pair_computer", {
     description: "Use this when the creator gives a six-digit pairing code shown by OBS Creator Assistant on their computer. Pair that computer to the signed-in creator account.",
