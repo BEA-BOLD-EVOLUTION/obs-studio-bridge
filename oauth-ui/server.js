@@ -1,4 +1,10 @@
 import express from "express";
+import {
+  defaultReleaseDownloadUrl,
+  installerUnavailableHtml,
+  releaseStatusUrl,
+  signedInstallerAvailable
+} from "./download.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -6,8 +12,7 @@ const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || "";
 
 const releaseDownloadUrl = process.env.RELEASE_DOWNLOAD_URL
-  || "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases/latest/download/OBS-Creator-Assistant-Setup.exe";
-const releasesPageUrl = "https://github.com/BEA-BOLD-EVOLUTION/obs-studio-bridge/releases";
+  || defaultReleaseDownloadUrl;
 
 if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error("SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are required.");
@@ -17,19 +22,11 @@ app.disable("x-powered-by");
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.get("/download", async (_req, res) => {
-  try {
-    const response = await fetch(releaseDownloadUrl, {
-      method: "HEAD",
-      redirect: "follow",
-      signal: AbortSignal.timeout(5000)
-    });
-    if (response.ok) {
-      return res.redirect(302, releaseDownloadUrl);
-    }
-  } catch {
-    // Fall through to the official release status page when GitHub is unavailable.
+  res.set("Cache-Control", "no-store");
+  if (await signedInstallerAvailable(releaseDownloadUrl)) {
+    return res.redirect(302, releaseDownloadUrl);
   }
-  return res.redirect(302, releasesPageUrl);
+  return res.status(503).type("html").send(installerUnavailableHtml());
 });
 
 app.get("/", (req, res, next) => {
@@ -49,9 +46,9 @@ app.get("/", (req, res, next) => {
 <p>Connect ChatGPT securely to your OBS computers, inspect production readiness, and coordinate creator-approved OBS actions.</p>
 <div class="actions">
 <a class="primary" href="/download">Download for Windows</a>
-<a class="secondary" href="${releasesPageUrl}">Release status</a>
+<a class="secondary" href="${releaseStatusUrl}">Release status</a>
 </div>
-<p class="note">Downloads come only from the official project release. If a signed installer is not available yet, the download link opens the current release status instead.</p>
+<p class="note">Downloads come only from the official signed project release. If the installer is not available yet, the download page explains the current status.</p>
 </main></body></html>`);
 });
 
