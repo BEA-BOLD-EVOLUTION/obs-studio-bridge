@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   windows-x64:
@@ -140,6 +141,28 @@ jobs:
           $forbidden = Get-ChildItem release-payload -Recurse -File | Where-Object Extension -In '.ps1', '.vbs', '.cmd', '.bat'
           if ($forbidden) { throw "Script-based launchers are not permitted in the release payload: $($forbidden.FullName -join ', ')" }
 
+      - name: Sign in to Azure with GitHub OIDC
+        if: vars.AZURE_ARTIFACT_SIGNING_ENABLED == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign packaged executables with Azure Artifact Signing
+        if: vars.AZURE_ARTIFACT_SIGNING_ENABLED == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ vars.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.AZURE_ARTIFACT_SIGNING_ACCOUNT_NAME }}
+          certificate-profile-name: ${{ vars.AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE }}
+          files: |
+            ${{ github.workspace }}\release-payload\helper\OBS-Creator-Assistant.exe
+            ${{ github.workspace }}\release-payload\plugin\obs-creator-assistant.dll
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
       - name: Build one-click installer
         shell: pwsh
         run: |
@@ -157,14 +180,56 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE." }
           $installer = Join-Path $output 'OBS-Creator-Assistant-Setup.exe'
           if (-not (Test-Path -LiteralPath $installer)) { throw 'Installer executable was not produced.' }
-          Get-FileHash -LiteralPath $installer -Algorithm SHA256 |
+
+      - name: Sign installer with Azure Artifact Signing
+        if: vars.AZURE_ARTIFACT_SIGNING_ENABLED == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ vars.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.AZURE_ARTIFACT_SIGNING_ACCOUNT_NAME }}
+          certificate-profile-name: ${{ vars.AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE }}
+          files: ${{ github.workspace }}\release-output\OBS-Creator-Assistant-Setup.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Verify signed release and write checksum
+        shell: pwsh
+        env:
+          ARTIFACT_SIGNING_ENABLED: ${{ vars.AZURE_ARTIFACT_SIGNING_ENABLED == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        run: |
+          if ($env:ARTIFACT_SIGNING_ENABLED -eq 'true') {
+            $signedFiles = @(
+              'release-payload/helper/OBS-Creator-Assistant.exe',
+              'release-payload/plugin/obs-creator-assistant.dll',
+              'release-output/OBS-Creator-Assistant-Setup.exe'
+            )
+            foreach ($path in $signedFiles) {
+              $signature = Get-AuthenticodeSignature -LiteralPath $path
+              if ($signature.Status -ne 'Valid') {
+                throw "Artifact Signing verification failed for ${path}: $($signature.StatusMessage)"
+              }
+            }
+          }
+          Get-FileHash -LiteralPath 'release-output/OBS-Creator-Assistant-Setup.exe' -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash.ToLower())  OBS-Creator-Assistant-Setup.exe" } |
             Set-Content release-output/OBS-Creator-Assistant-Setup.exe.sha256 -Encoding ASCII
 
-      - name: Upload private unsigned artifact for SignPath review
+      - name: Upload unsigned validation artifact
+        if: vars.AZURE_ARTIFACT_SIGNING_ENABLED != 'true' || github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
-          name: OBS-Creator-Assistant-SignPath-input
+          name: OBS-Creator-Assistant-unsigned-validation
+          path: |
+            release-output/OBS-Creator-Assistant-Setup.exe
+            release-output/OBS-Creator-Assistant-Setup.exe.sha256
+          if-no-files-found: error
+
+      - name: Upload signed release candidate
+        if: vars.AZURE_ARTIFACT_SIGNING_ENABLED == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: OBS-Creator-Assistant-signed-release
           path: |
             release-output/OBS-Creator-Assistant-Setup.exe
             release-output/OBS-Creator-Assistant-Setup.exe.sha256
