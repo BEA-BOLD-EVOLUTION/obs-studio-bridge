@@ -128,6 +128,38 @@
         "destructive_justification": "Does not modify scenes or sources."
       }
     },
+    "obs_discover_cameras": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Lists camera sources already configured in OBS and present Windows camera device metadata so the creator can identify each camera.",
+        "open_world_justification": "Reads private local device and OBS metadata and does not publish content or contact an external service.",
+        "destructive_justification": "Does not create, remove, activate, or reconfigure cameras or OBS scenes."
+      }
+    },
+    "obs_create_camera_layout": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "After explicit confirmation, creates or updates one OBS scene using existing creator-identified camera sources and a bounded layout.",
+        "open_world_justification": "Changes private local OBS presentation state and does not start a TikTok LIVE or publish content.",
+        "destructive_justification": "Does not delete scenes or inputs, accepts only one to four existing sources, and verifies each applied scene-item transform."
+      }
+    },
+    "studio_inspect_tiktok_live": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Checks only whether TikTok LIVE Studio is installed and currently running on the selected creator-owned Windows computer.",
+        "open_world_justification": "Reads private local application metadata without signing in, navigating, or communicating with TikTok.",
+        "destructive_justification": "Does not open, close, configure, or otherwise change TikTok LIVE Studio."
+      }
+    },
+    "studio_launch_tiktok_live": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "After explicit confirmation, opens the installed TikTok LIVE Studio application on the selected creator-owned computer.",
+        "open_world_justification": "Launches a private local application but does not sign in, change settings, click Go LIVE, or publish content.",
+        "destructive_justification": "Does not delete data, stop processes, change configuration, or start a broadcast."
+      }
+    },
     "obs_switch_scene": {
       "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
@@ -224,6 +256,22 @@
       "file_attachment_urls": null,
       "tools_triggered": "obs_run_ai_transition",
       "expected_output": "Runs the three media clips in order and returns the creator to the prior LIVE scene, or safely reports a media failure.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Discover and identify the creator's connected cameras before creating a multi-camera TikTok production scene.",
+      "user_prompt": "Find my cameras and help me identify Main, Overhead, Side, and Pet Cam. Then propose a three-camera layout and ask before creating it.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_discover_cameras, obs_create_camera_layout",
+      "expected_output": "Lists private local camera candidates and existing OBS camera sources, asks the creator to identify roles, proposes a bounded layout, requests explicit confirmation, and verifies the resulting OBS scene-item transforms.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Check and open TikTok LIVE Studio without signing in or starting a broadcast.",
+      "user_prompt": "Check whether TikTok LIVE Studio is installed and running. If it is closed, ask me before opening it.",
+      "file_attachment_urls": null,
+      "tools_triggered": "studio_inspect_tiktok_live, studio_launch_tiktok_live",
+      "expected_output": "Reports the private local application state, requests explicit confirmation before opening TikTok LIVE Studio, and clearly states that it did not sign in, change settings, or start a LIVE.",
       "expected_output_url": null
     },
     {

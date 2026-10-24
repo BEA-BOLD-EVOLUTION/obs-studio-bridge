@@ -254,6 +254,51 @@ export function createCreatorMcpServer({
     annotations: readOnly
   }, async ({ deviceId }) => result(await dispatchCommand(accessToken, deviceId, { tool: "obs_list_scenes", arguments: {} })));
 
+  server.registerTool("obs_discover_cameras", {
+    description: "Use this to discover existing OBS camera sources and connected Windows camera candidates on a selected computer. Always ask the creator to identify which is Main, Overhead, Side, Pet Cam, Phone, or a custom role.",
+    inputSchema: { deviceId: z.string().uuid().optional() },
+    annotations: readOnly
+  }, async ({ deviceId }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_discover_cameras",
+    arguments: {}
+  })));
+
+  server.registerTool("obs_create_camera_layout", {
+    description: "After explicit creator confirmation, create or update an OBS camera scene from identified existing sources. Supports fullscreen, side-by-side, picture-in-picture, three-camera, and grid layouts for Main, Overhead, Side, Pet Cam, and other creator-labeled cameras.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      sceneName: z.string().trim().min(1).max(120),
+      layout: z.enum(["fullscreen", "side_by_side", "picture_in_picture", "three_camera", "grid"]),
+      cameraSourceNames: z.array(z.string().trim().min(1).max(120)).min(1).max(4),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves creating or updating this camera layout in OBS.")
+    },
+    annotations: write
+  }, async ({ deviceId, confirmed, ...arguments_ }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_create_camera_layout",
+    arguments: { ...arguments_, confirmed }
+  })));
+
+  server.registerTool("studio_inspect_tiktok_live", {
+    description: "Check whether TikTok LIVE Studio is installed and running on the selected computer without changing it.",
+    inputSchema: { deviceId: z.string().uuid().optional() },
+    annotations: readOnly
+  }, async ({ deviceId }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "studio_inspect_tiktok_live",
+    arguments: {}
+  })));
+
+  server.registerTool("studio_launch_tiktok_live", {
+    description: "Open TikTok LIVE Studio on the selected computer after explicit creator confirmation. This does not sign in, change settings, or start a LIVE.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      confirmed: z.literal(true).describe("Must be true only after the creator explicitly asks to open TikTok LIVE Studio.")
+    },
+    annotations: write
+  }, async ({ deviceId, confirmed }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "studio_launch_tiktok_live",
+    arguments: { confirmed }
+  })));
+
   server.registerTool("obs_switch_scene", {
     description: "Use this when the creator asks to switch their current LIVE to a named OBS scene.",
     inputSchema: { deviceId: z.string().uuid().optional(), sceneName: z.string().min(1) },

@@ -7,6 +7,8 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { OBSWebSocket } from "obs-websocket-js";
 import { z } from "zod";
 import { inspectAudioInput, setAudioInputMuted, setAudioInputVolume } from "./audio-controls.js";
+import { createCameraLayout, discoverCameras } from "./camera-controls.js";
+import { inspectTikTokLiveStudio, launchTikTokLiveStudio } from "./desktop-integration.js";
 import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
 import { inspectProductionResources } from "./production-readiness.js";
 import { setProgramScene, setSceneSourceVisibility } from "./scene-controls.js";
@@ -103,6 +105,41 @@ function createMcpServer(): McpServer {
     inputSchema: {},
     annotations: readOnlyAnnotations
   }, async () => result(await obsCall("GetSceneList")));
+
+  server.registerTool("obs_discover_cameras", {
+    description: "List existing OBS camera sources and camera devices currently connected to this Windows computer so the creator can identify Main, Overhead, Side, Pet Cam, Phone, or a custom role.",
+    inputSchema: {},
+    annotations: readOnlyAnnotations
+  }, async () => result(await discoverCameras(obsCall)));
+
+  server.registerTool("obs_create_camera_layout", {
+    description: "After explicit creator confirmation, create or update an OBS scene using one to four existing camera sources in a verified fullscreen, side-by-side, picture-in-picture, three-camera, or grid layout.",
+    inputSchema: {
+      sceneName: z.string().trim().min(1).max(120),
+      layout: z.enum(["fullscreen", "side_by_side", "picture_in_picture", "three_camera", "grid"]),
+      cameraSourceNames: z.array(z.string().trim().min(1).max(120)).min(1).max(4),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves creating or updating this OBS camera layout.")
+    },
+    annotations: writeAnnotations
+  }, async ({ sceneName, layout, cameraSourceNames }) => result(await createCameraLayout(obsCall, {
+    sceneName,
+    layout,
+    cameraSourceNames
+  })));
+
+  server.registerTool("studio_inspect_tiktok_live", {
+    description: "Check whether TikTok LIVE Studio is installed and running on this Windows computer without changing it.",
+    inputSchema: {},
+    annotations: readOnlyAnnotations
+  }, async () => result(await inspectTikTokLiveStudio()));
+
+  server.registerTool("studio_launch_tiktok_live", {
+    description: "Open TikTok LIVE Studio after explicit creator confirmation. This never signs in, changes LIVE settings, or starts a broadcast.",
+    inputSchema: {
+      confirmed: z.literal(true).describe("Must be true only after the creator explicitly asks to open TikTok LIVE Studio.")
+    },
+    annotations: writeAnnotations
+  }, async ({ confirmed }) => result(await launchTikTokLiveStudio(confirmed)));
 
   server.registerTool("obs_list_sources", {
     description: "List sources in an OBS scene, including visibility and transform metadata.",
