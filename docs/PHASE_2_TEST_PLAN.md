@@ -12,6 +12,7 @@ This plan covers the Phase 2 path from ChatGPT through the hosted relay and loca
 - At least one Windows integration run against every OBS major version supported by the installer.
 - At least one end-to-end test for portrait and landscape TikTok LIVE Studio layouts before Phase 2 release.
 - At least one Windows camera-discovery run with a physical camera and a virtual camera when both are available.
+- At least one complete OBS video-setup run for portrait and landscape, including an active-output refusal test.
 
 ## Automated tests
 
@@ -33,6 +34,10 @@ This plan covers the Phase 2 path from ChatGPT through the hosted relay and loca
 - Verify every created scene-item transform and fail rather than claim completion when verification differs.
 - Require explicit confirmation before creating a camera layout or opening TikTok LIVE Studio.
 - Permit camera discovery and TikTok LIVE Studio inspection without confirmation.
+- Inspect Base Canvas, Output Resolution, FPS, generic outputs, and Virtual Camera without mutation.
+- Apply all six video values together only after confirmation and only when every OBS output is inactive.
+- Treat an already matching video setup as an idempotent no-op.
+- Verify the complete applied setup and restore all previous values when verification differs.
 
 ### Relay contract tests
 
@@ -86,6 +91,19 @@ Run on a Windows test computer with at least one camera already added to OBS as 
 8. Confirm existing scenes and inputs were not deleted or renamed.
 9. Request a layout with a missing or duplicate input and confirm no scene changes are made.
 10. Disconnect a camera and confirm the assistant reports the issue without claiming that a usable preview was verified.
+
+## Windows complete video-setup tests
+
+Run with all OBS outputs stopped:
+
+1. Inspect the setup and record Base Canvas, Output Resolution, FPS numerator/denominator, and output status.
+2. Apply **TikTok Portrait 30** after confirmation and verify `1080x1920` Base Canvas, `1080x1920` Output Resolution, and `30/1` FPS in OBS.
+3. Apply **TikTok Landscape 30** and verify `1920x1080` for both resolutions and `30/1` FPS.
+4. Repeat a matching preset and confirm no setting is rewritten.
+5. Start OBS Virtual Camera and confirm the assistant refuses to change video settings.
+6. Stop Virtual Camera, start recording, and confirm the same refusal.
+7. If a safe test harness can simulate a mismatched read-back, confirm the prior complete setup is restored and the assistant reports failure rather than success.
+8. Test one valid custom setup and reject a custom request missing any of the six required values.
 
 ## TikTok LIVE Studio acceptance tests
 

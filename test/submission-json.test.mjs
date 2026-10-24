@@ -62,3 +62,11 @@ test("ChatGPT submission metadata includes bounded camera and TikTok Studio acti
   assert.equal(submission.tools.studio_inspect_tiktok_live.annotations.readOnlyHint, true);
   assert.equal(submission.tools.studio_launch_tiktok_live.annotations.readOnlyHint, false);
 });
+
+test("ChatGPT submission metadata includes complete guarded OBS video setup", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+  assert.equal(submission.tools.obs_inspect_video_setup.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.obs_apply_video_setup.annotations.readOnlyHint, false);
+  assert.match(submission.tools.obs_apply_video_setup.justifications.destructive_justification, /restores the previous settings/i);
+});
