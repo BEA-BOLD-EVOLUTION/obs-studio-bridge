@@ -31,6 +31,8 @@ the decisive OBS plugin-discovery test.
 3. Double-click the installer and approve the Windows prompt.
 4. Reopen OBS Studio and choose **Docks → OBS Creator Assistant**.
 
+Because this is a newly issued public-trust certificate, Microsoft Defender SmartScreen may initially show **Windows protected your PC** while reputation builds. Select **More info** and verify that the publisher is **TPC Global** before choosing **Run anyway**. Stop if the publisher is missing or different, and download a fresh copy from the branded address above.
+
 That one installer adds both the OBS plugin and the desktop helper, detects the local OBS WebSocket settings, starts the helper automatically with Windows, and opens the first-run wizard. The wizard offers **Program View**, **Viewer View**, or **Both** and keeps ChatGPT account approval as a separate, optional user action. Existing connection settings are preserved when upgrading.
 
 No ZIP extraction, terminal, Node.js installation, token generation, or manual file editing is required.

@@ -13,6 +13,10 @@
     "@supabase/supabase-js": "^2.57.4",
     "express": "^5.3.0",
     "ws": "8.21.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
+  },
+  "overrides": {
+    "body-parser": "2.4.0",
+    "fast-uri": "3.1.9"
   }
 }
