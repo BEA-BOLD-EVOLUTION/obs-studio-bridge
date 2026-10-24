@@ -46,3 +46,19 @@ test("ChatGPT submission metadata includes confirmed coordination and session to
   assert.match(submission.tools.obs_inspect_dual_pc_session_health.justifications.destructive_justification, /read-only status and performance/i);
   assert.match(submission.tools.obs_update_dual_pc_production.justifications.destructive_justification, /attempts immediate compensation/i);
 });
+
+test("ChatGPT submission metadata includes bounded camera and TikTok Studio actions", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+
+  for (const tool of [
+    "obs_discover_cameras",
+    "obs_create_camera_layout",
+    "studio_inspect_tiktok_live",
+    "studio_launch_tiktok_live"
+  ]) assert.ok(submission.tools[tool], `${tool} must be documented`);
+  assert.equal(submission.tools.obs_discover_cameras.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.obs_create_camera_layout.annotations.readOnlyHint, false);
+  assert.equal(submission.tools.studio_inspect_tiktok_live.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.studio_launch_tiktok_live.annotations.readOnlyHint, false);
+});

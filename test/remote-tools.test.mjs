@@ -20,6 +20,13 @@ test("focused audio inspection and bounded audio controls are remotely allowlist
   assert.equal(isRemoteToolAllowed("obs_set_input_volume"), true);
 });
 
+test("camera discovery, verified layouts, and bounded TikTok Studio actions are remotely allowlisted", () => {
+  assert.equal(isRemoteToolAllowed("obs_discover_cameras"), true);
+  assert.equal(isRemoteToolAllowed("obs_create_camera_layout"), true);
+  assert.equal(isRemoteToolAllowed("studio_inspect_tiktok_live"), true);
+  assert.equal(isRemoteToolAllowed("studio_launch_tiktok_live"), true);
+});
+
 test("arbitrary OBS tools remain blocked", () => {
   assert.equal(isRemoteToolAllowed("obs_call"), false);
   assert.equal(isRemoteToolAllowed("DeleteScene"), false);

@@ -3,6 +3,8 @@ export const allowedRemoteTools = new Set([
   "obs_get_performance_stats",
   "obs_inspect_audio_input",
   "obs_list_scenes",
+  "obs_discover_cameras",
+  "obs_create_camera_layout",
   "obs_inspect_production_resources",
   "obs_switch_scene",
   "obs_set_source_visibility",
@@ -13,7 +15,9 @@ export const allowedRemoteTools = new Set([
   "obs_stop_virtual_camera",
   "obs_run_ai_transition",
   "obs_share_capture_source",
-  "obs_run_workflow"
+  "obs_run_workflow",
+  "studio_inspect_tiktok_live",
+  "studio_launch_tiktok_live"
 ]);
 
 export function isRemoteToolAllowed(tool: string): boolean {

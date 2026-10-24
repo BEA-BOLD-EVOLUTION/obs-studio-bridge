@@ -78,7 +78,8 @@ Example requests:
 - After explicit confirmation, switch a scene or change an existing source's visibility on the Background or Camera/Compositor role during an active session.
 - After explicit confirmation, mute/unmute or set bounded volume on an existing OBS audio input on the selected production role.
 - Capture every role-specific update so a confirmed stop restores changes in reverse order, and compensate immediately when an update fails or times out.
-- Keep TikTok LIVE Studio audio setup, preview, **Go LIVE**, and **End LIVE** under creator control.
+- Inspect whether TikTok LIVE Studio is installed or running, and open it only after explicit creator confirmation.
+- Keep TikTok LIVE Studio sign-in, source and audio setup, preview, **Go LIVE**, and **End LIVE** under creator control.
 
 Example requests:
 
@@ -125,13 +126,43 @@ Example request:
 - Verify the reported state after OBS accepts a change.
 - Clearly distinguish an active OBS Virtual Camera from an active TikTok LIVE.
 
-TikTok LIVE Studio must run on the same computer as the Camera/Compositor OBS instance and use **OBS Virtual Camera** as its Camera source. TikTok's preview, audio configuration, **Go LIVE**, and **End LIVE** controls remain in TikTok LIVE Studio.
+TikTok LIVE Studio must run on the same computer as the Camera/Compositor OBS instance and use **OBS Virtual Camera** as its Camera source. OBS Creator Assistant can inspect whether LIVE Studio is installed or running and, after confirmation, open it. TikTok sign-in, camera-source selection, preview, audio configuration, **Go LIVE**, and **End LIVE** controls remain in TikTok LIVE Studio.
 
 Example requests:
 
 - “Is my OBS virtual camera running?”
 - “Start OBS Virtual Camera for TikTok Studio.”
 - “I ended my TikTok LIVE; stop OBS Virtual Camera.”
+
+#### Identify cameras and build a multi-camera scene
+
+- List existing OBS camera inputs together with their active state and settings.
+- Discover Windows camera devices and separate physical cameras from virtual cameras.
+- Ask the creator to identify each device in plain language, such as **Main**, **Overhead**, **Side**, **Pet Cam**, **Phone**, or a custom name.
+- After explicit confirmation, create a new OBS scene using existing OBS camera inputs in **Fullscreen**, **Side by side**, **Picture in picture**, **Three camera**, or **Grid** layouts.
+- Size the layout to the current OBS canvas, including portrait canvases used for TikTok.
+- Verify every scene-item transform after OBS accepts the change.
+- Preserve existing scenes and camera inputs; this action does not delete or replace them.
+
+Example requests:
+
+- “Which cameras are connected to this computer?”
+- “Help me identify my overhead and pet cameras.”
+- “Create a three-camera scene with Main, Overhead, and Side.”
+- “Put Main and Pet Cam side by side for TikTok.”
+
+Physical camera discovery identifies Windows devices. Before the assistant can place a camera in a scene, that camera must already exist as an OBS **Video Capture Device** input. Device discovery does not guess which camera is which or silently create an input with an unverified DirectShow identifier.
+
+#### Inspect and open TikTok LIVE Studio
+
+- Report whether TikTok LIVE Studio is installed and currently running.
+- Open the installed application only after explicit creator confirmation.
+- Never enter credentials, sign in, change LIVE Studio settings, or click **Go LIVE**.
+
+Example requests:
+
+- “Is TikTok LIVE Studio installed?”
+- “Open TikTok LIVE Studio.”
 
 #### Run a three-part media transition
 
@@ -205,6 +236,9 @@ The localhost-only MCP bridge includes additional tools for local integrations a
 - Start or stop streaming.
 - Start or stop recording.
 - Inspect, start, or stop OBS Virtual Camera.
+- Discover physical and virtual Windows cameras and inspect existing OBS camera inputs.
+- Create a confirmed multi-camera layout from existing OBS camera inputs and verify its transforms.
+- Inspect or, after confirmation, open TikTok LIVE Studio.
 - Save the current replay buffer.
 - Run the same media-transition, screen-sharing, and custom-workflow engines described above.
 
@@ -215,10 +249,11 @@ Output controls check the current state first, so repeated start or stop request
 OBS Creator Assistant does not currently:
 
 - Execute arbitrary OBS WebSocket requests.
-- Create, delete, or rename scenes, sources, profiles, or scene collections.
+- Delete or rename scenes, sources, profiles, or scene collections. The only supported scene creation is the confirmed multi-camera layout action described above.
 - Create a screen/window capture source or change which window an existing source captures.
 - Install OBS plugins or modify arbitrary files on the computer.
 - Close applications, restart the computer, or provide general operating-system control.
+- Click arbitrary controls or type into TikTok LIVE Studio or other desktop applications.
 - Control an OBS computer that is not paired to the authenticated user's account.
 - Send the OBS WebSocket password to ChatGPT or the hosted relay.
 - Expose local-only output controls through the current hosted ChatGPT allowlist.
@@ -226,7 +261,7 @@ OBS Creator Assistant does not currently:
 
 ## Phase 2 roadmap
 
-Phase 2 is being delivered in guarded slices. Virtual Camera control, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, and confirmed role-specific scene, source, mute, and volume updates are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
+Phase 2 is being delivered in guarded slices. Virtual Camera control, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, confirmed role-specific scene/source/audio updates, camera discovery, confirmed multi-camera scene creation, and guarded TikTok LIVE Studio inspection and launch are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
 
 ### Safer remote production controls
 
@@ -280,7 +315,7 @@ Confirmed mute/unmute and bounded volume changes for existing inputs are impleme
 
 ### Dual-PC TikTok LIVE Studio production
 
-Naming, role assignment, preset storage, read-only readiness, ordered startup, production-session auditing, reverse-order restoration, on-demand health snapshots, and confirmed role-specific scene/source/audio updates are implemented. Continuous notifications and synchronized cross-computer transitions remain planned.
+Naming, role assignment, preset storage, read-only readiness, ordered startup, production-session auditing, reverse-order restoration, on-demand health snapshots, confirmed role-specific scene/source/audio updates, camera discovery, multi-camera scene creation, and guarded LIVE Studio inspection/launch are implemented. Continuous notifications, target-bound LIVE Studio configuration, and synchronized cross-computer transitions remain planned.
 
 Support creators who use one OBS computer for backgrounds and a second OBS computer for camera composition, overlays, and effects, with the finished video delivered to TikTok LIVE Studio through OBS Virtual Camera:
 
