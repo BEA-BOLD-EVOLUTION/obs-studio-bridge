@@ -2,7 +2,7 @@
 
 OBS Creator Assistant uses a controlled, reviewable build and release process for Windows artifacts.
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+Windows artifacts are signed through [Microsoft Azure Artifact Signing](https://azure.microsoft.com/products/artifact-signing/) using the TPC Global public-trust certificate profile.
 
 ## Team roles
 
@@ -10,7 +10,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 - Signing approver: [BEA-BOLD-EVOLUTION](https://github.com/BEA-BOLD-EVOLUTION)
 - Security contact: [bea@boldevolution.net](mailto:bea@boldevolution.net)
 
-All maintainers and signing users must use multifactor authentication. Changes from outside contributors require review by a maintainer. A signing request requires a separate manual approval after the automated build and security checks succeed.
+All maintainers and signing users must use multifactor authentication. Changes from outside contributors require review by a maintainer. GitHub Actions may request a signature only from the protected `main` branch by using short-lived OpenID Connect credentials; no reusable Azure client secret is stored in the repository.
 
 ## Build and release controls
 

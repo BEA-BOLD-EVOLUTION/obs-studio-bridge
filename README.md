@@ -6,20 +6,18 @@ The ChatGPT app also includes an embedded **Creator Dashboard** designed for non
 
 ## Release status
 
-The Windows installer is temporarily unavailable. The unsigned v1.3.0 installer was withdrawn after antivirus warnings.
+The official Windows installer is built from this public repository and signed through Microsoft Azure Artifact Signing. Windows identifies the verified publisher as **TPC Global**.
 
-The project has applied to the SignPath Foundation open-source program. Approval is pending. Until approval and signing verification are complete, unsigned installers will not be published.
+Every published Windows release:
 
-If the application is accepted, future Windows releases will:
+- Is built from this public repository by GitHub Actions.
+- Is signed using the TPC Global public-trust certificate profile in Azure Artifact Signing.
+- Has its Authenticode signature validated before publication.
+- Includes a SHA-256 checksum and a link to the source commit.
 
-- Be built from this public repository by GitHub Actions.
-- Require manual signing approval.
-- Be signed by SignPath Foundation.
-- Include a SHA-256 checksum and a link to the source commit.
+Do not download installers from mirrors or third-party sites.
 
-Do not download installers from mirrors or third-party sites. There is currently no approved Windows installer.
-
-The permanent branded download address is [obs.boldevolution.net/download](https://obs.boldevolution.net/download). It redirects to the official signed installer when one is available and otherwise opens the official release status page.
+The permanent branded download address is [obs.boldevolution.net/download](https://obs.boldevolution.net/download). It redirects to the latest official signed installer.
 
 An experimental Microsoft Store MSIX path is being evaluated separately. It is a
 private feasibility build, not an approved download. See the
@@ -27,8 +25,6 @@ private feasibility build, not an approved download. See the
 the decisive OBS plugin-discovery test.
 
 ## Install on Windows
-
-These instructions will apply after an approved, signed release is published:
 
 1. Open [obs.boldevolution.net/download](https://obs.boldevolution.net/download) to download **OBS-Creator-Assistant-Setup.exe** from the official signed release.
 2. Close OBS Studio.
@@ -344,9 +340,9 @@ See the [privacy statement](PRIVACY.md) for the information transferred when the
 
 ## Code signing policy
 
-The project has applied for free open-source code signing through SignPath. Approval is pending. Until approval and signing verification are complete, unsigned installers are not published.
+Windows releases are signed through [Microsoft Azure Artifact Signing](https://azure.microsoft.com/products/artifact-signing/) using the public-trust certificate profile owned by TPC Global. GitHub Actions authenticates to Azure with short-lived OpenID Connect credentials; no reusable Azure client secret is stored in the repository.
 
-If accepted, code signing will be provided by [SignPath.io](https://about.signpath.io/) with a certificate issued by [SignPath Foundation](https://signpath.org/).
+The release workflow signs the desktop helper, native OBS plugin DLL, and final installer, then requires Windows Authenticode verification to report `Valid` before the installer can be uploaded as a release candidate.
 
 See the full [code signing policy](CODE_SIGNING_POLICY.md), including team roles and verification requirements.
 
@@ -362,6 +358,6 @@ pnpm run build
 pnpm start
 ```
 
-End users should wait for an approved, signed Windows release rather than installing CI artifacts or unsigned packages.
+End users should install only the signed Windows release from [obs.boldevolution.net/download](https://obs.boldevolution.net/download), not temporary CI artifacts or unsigned packages.
 
 The root PowerShell scripts and `installer/Setup.cmd` are developer/test harnesses only. They deliberately remain available for local integration work but are excluded from the signed installer payload and are not part of creator onboarding.
