@@ -2,12 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 
 export type ClipMode = "program" | "viewer" | "both";
-export type ViewerCaptureMethod = "airplay" | "software_mirroring" | "hardware_capture" | "other_obs_source";
+export type ProgramCaptureMethod = "obs_program" | "tiktok_live_studio" | "obs_virtual_camera";
+export type ViewerCaptureMethod = "managed_android" | "airplay" | "software_mirroring" | "hardware_capture" | "other_obs_source";
 
 export type CreatorSetup = {
   version: 1;
   setupComplete: boolean;
   clipMode: ClipMode;
+  programCaptureMethod: ProgramCaptureMethod;
   viewerCaptureMethod: ViewerCaptureMethod | null;
   viewerObsUrl: string;
   viewerSourceName: string;
@@ -18,6 +20,7 @@ export const defaultCreatorSetup: CreatorSetup = {
   version: 1,
   setupComplete: false,
   clipMode: "program",
+  programCaptureMethod: "obs_program",
   viewerCaptureMethod: null,
   viewerObsUrl: "ws://127.0.0.1:4456",
   viewerSourceName: "",
@@ -57,7 +60,7 @@ export function validateCreatorSetup(value: unknown): CreatorSetup {
   }
 
   const capture = input.viewerCaptureMethod ?? null;
-  const allowedCapture = capture === "airplay" || capture === "software_mirroring" ||
+  const allowedCapture = capture === "managed_android" || capture === "airplay" || capture === "software_mirroring" ||
     capture === "hardware_capture" || capture === "other_obs_source";
   if (clipMode !== "program" && !allowedCapture) {
     throw new Error("Choose how the viewer phone appears in OBS.");
@@ -71,10 +74,16 @@ export function validateCreatorSetup(value: unknown): CreatorSetup {
   const viewerSourceName = typeof input.viewerSourceName === "string" ? input.viewerSourceName.trim() : "";
   if (viewerSourceName.length > 200) throw new Error("The OBS source name is too long.");
 
+  const programCaptureMethod = input.programCaptureMethod ?? defaultCreatorSetup.programCaptureMethod;
+  const allowedProgramCapture = programCaptureMethod === "obs_program" ||
+    programCaptureMethod === "tiktok_live_studio" || programCaptureMethod === "obs_virtual_camera";
+  if (!allowedProgramCapture) throw new Error("Choose how the desktop production view is created.");
+
   return {
     version: 1,
     setupComplete: input.setupComplete === true,
     clipMode,
+    programCaptureMethod,
     viewerCaptureMethod: allowedCapture ? capture : null,
     viewerObsUrl,
     viewerSourceName,

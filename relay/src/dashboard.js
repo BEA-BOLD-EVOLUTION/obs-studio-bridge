@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { toolPayload } from "./dual-pc.js";
 
-export const DASHBOARD_URI = "ui://obs-creator-assistant/dashboard-v1.html";
+export const DASHBOARD_URI = "ui://obs-creator-assistant/dashboard-v2.html";
 export const DASHBOARD_MIME_TYPE = "text/html;profile=mcp-app";
 
 const dashboardPath = fileURLToPath(new URL("../web/dashboard.html", import.meta.url));

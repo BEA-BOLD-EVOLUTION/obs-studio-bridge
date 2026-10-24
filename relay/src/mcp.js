@@ -83,7 +83,7 @@ export function createCreatorMcpServer({
           prefersBorder: false,
           csp: { connectDomains: [], resourceDomains: [] }
         },
-        "openai/widgetDescription": "Interactive OBS Creator Dashboard showing linked computers, connection and output status, scenes, and creator shortcuts.",
+        "openai/widgetDescription": "Interactive OBS Creator Assistant control room showing linked computers, output status, color-coded scenes, production views, audio, clipping, and creator shortcuts.",
         "openai/widgetPrefersBorder": false,
         "openai/widgetCSP": { connect_domains: [], resource_domains: [] }
       }

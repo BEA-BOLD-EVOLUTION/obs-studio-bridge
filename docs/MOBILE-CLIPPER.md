@@ -6,11 +6,11 @@ Give creators one `CLIP THIS` workflow with a choice of what perspective to save
 
 V1 supports two clip sources and a combined action:
 
-- **Program View** — saves the creator's normal OBS program output.
-- **Viewer View** — saves the authentic TikTok mobile viewer perspective, including chat, gifts, reactions, and TikTok's current mobile UI.
+- **Desktop View** — saves the creator's clean production output from OBS Studio or the existing OBS-to-TikTok-LIVE-Studio workflow.
+- **Phone View** — saves the authentic TikTok mobile viewer perspective, including chat, gifts, reactions, power-ups, and TikTok's current mobile UI.
 - **Both** — saves the independent Program View and Viewer View replay buffers together.
 
-Viewer View is optional. Creators who do not want or need a separate viewer phone can use Program View only.
+Phone View is optional. Creators who do not want it can use Desktop View only. When Phone View is selected, the recommended path is a managed Android viewer where the creator signs into TikTok directly with a backup/viewer account.
 
 ## Why the two modes use different OBS roles
 
@@ -151,7 +151,13 @@ Phone OS and transport are Viewer View setup metadata, not clipping-engine depen
 ```ts
 type ClipMode = 'program' | 'viewer' | 'both';
 
+type ProgramCaptureMethod =
+  | 'obs_program'
+  | 'tiktok_live_studio'
+  | 'obs_virtual_camera';
+
 type ViewerCaptureMethod =
+  | 'managed_android'
   | 'airplay'
   | 'software_mirroring'
   | 'hardware_capture'

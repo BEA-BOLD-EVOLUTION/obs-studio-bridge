@@ -8,7 +8,7 @@ import {
 } from "../src/dashboard.js";
 
 test("dashboard resource follows the MCP Apps UI contract", () => {
-  assert.equal(DASHBOARD_URI, "ui://obs-creator-assistant/dashboard-v1.html");
+  assert.equal(DASHBOARD_URI, "ui://obs-creator-assistant/dashboard-v2.html");
   assert.equal(DASHBOARD_MIME_TYPE, "text/html;profile=mcp-app");
   assert.match(dashboardHtml, /ui\/initialize/);
   assert.match(dashboardHtml, /ui\/notifications\/tool-result/);
@@ -17,6 +17,17 @@ test("dashboard resource follows the MCP Apps UI contract", () => {
   assert.match(dashboardHtml, /obs_switch_scene/);
   assert.match(dashboardHtml, /No typing needed/);
   assert.match(dashboardHtml, /id="modeToggle"/);
+  assert.match(dashboardHtml, /Quick choices by type/);
+  assert.match(dashboardHtml, /sceneGroup/);
+  assert.match(dashboardHtml, /renderScenes/);
+  assert.match(dashboardHtml, /Scares &amp; Surprises/);
+  assert.match(dashboardHtml, /AI Features/);
+  assert.match(dashboardHtml, /Camera Views/);
+  assert.match(dashboardHtml, /jump\[\\s_\-\]\*scare/);
+  assert.match(dashboardHtml, /face\[\\s_\-\]\*\(change\|swap\|morph\|filter\)/);
+  assert.match(dashboardHtml, /Desktop View/);
+  assert.match(dashboardHtml, /Phone View/);
+  assert.match(dashboardHtml, /aria-label.*Currently showing/);
   assert.doesNotMatch(dashboardHtml, /<input\b/);
 });
 
