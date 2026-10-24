@@ -11,6 +11,7 @@ on:
       - "src/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
 
 permissions:
   contents: read
@@ -107,6 +108,10 @@ jobs:
           Copy-Item $pluginDll.FullName release-payload/plugin/obs-creator-assistant.dll
           Copy-Item product/obs-plugin/data/locale/en-US.ini release-payload/plugin/en-US.ini
           Copy-Item product/obs-plugin/data/manifest.json release-payload/plugin/manifest.json
+          Push-Location release-payload/helper
+          & './runtime/node.exe' --input-type=module -e "await import('@modelcontextprotocol/sdk/server/streamableHttp.js')"
+          if ($LASTEXITCODE -ne 0) { throw "The packaged MCP runtime dependency graph is incomplete." }
+          Pop-Location
 
       - name: Build and development-sign MSIX
         shell: pwsh
