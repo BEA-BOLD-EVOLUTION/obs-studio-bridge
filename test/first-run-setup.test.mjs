@@ -14,6 +14,7 @@ test("first run defaults to Program View without requiring viewer hardware", () 
     const config = readCreatorSetup(root);
     assert.equal(config.setupComplete, false);
     assert.equal(config.clipMode, "program");
+    assert.equal(config.programCaptureMethod, "obs_program");
     assert.equal(config.viewerCaptureMethod, null);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -29,6 +30,25 @@ test("viewer setup requires a supported capture choice and local OBS endpoint", 
   }), /local ws/);
 });
 
+test("setup records the creator's existing desktop production path", () => {
+  for (const programCaptureMethod of ["obs_program", "tiktok_live_studio", "obs_virtual_camera"]) {
+    const config = validateCreatorSetup({ clipMode: "program", programCaptureMethod });
+    assert.equal(config.programCaptureMethod, programCaptureMethod);
+  }
+  assert.throws(() => validateCreatorSetup({
+    clipMode: "program",
+    programCaptureMethod: "new_custom_pipeline"
+  }), /desktop production view/);
+});
+
+test("managed Android is a supported Phone View preference", () => {
+  const config = validateCreatorSetup({
+    clipMode: "viewer",
+    viewerCaptureMethod: "managed_android"
+  });
+  assert.equal(config.viewerCaptureMethod, "managed_android");
+});
+
 test("Both keeps production and viewer clip paths separate", () => {
   assert.deepEqual(clipTargetsForMode("both"), ["program", "viewer"]);
   assert.deepEqual(clipTargetsForMode("program"), ["program"]);
@@ -40,6 +60,7 @@ test("saved setup contains preferences but no local bridge token", () => {
   try {
     const saved = writeCreatorSetup({
       clipMode: "both",
+      programCaptureMethod: "obs_virtual_camera",
       viewerCaptureMethod: "hardware_capture",
       viewerObsUrl: "ws://127.0.0.1:4456",
       viewerSourceName: "Viewer Phone"
@@ -98,12 +119,17 @@ test("an existing OBS WebSocket password is preserved", () => {
 
 test("creator wizard exposes friendly choices without developer setup terms", () => {
   const html = onboardingHtml();
-  assert.match(html, /Program View/);
-  assert.match(html, /Viewer View/);
+  assert.match(html, /Desktop View/);
+  assert.match(html, /Phone View/);
   assert.match(html, />Both</);
   assert.match(html, /AirPlay/);
   assert.match(html, /Software mirroring/);
   assert.match(html, /Hardware capture/);
+  assert.match(html, /Built-in Android Viewer/);
+  assert.match(html, /TikTok LIVE Studio/);
+  assert.match(html, /OBS Virtual Camera/);
+  assert.match(html, /type <strong>@<\/strong>/);
+  assert.match(html, /This pairing code expired/);
   assert.match(html, /one-time approval/i);
   for (const forbidden of ["PowerShell", ".env", "YAML", "API key", "MCP"]) {
     assert.equal(html.includes(forbidden), false, `wizard must not expose ${forbidden}`);

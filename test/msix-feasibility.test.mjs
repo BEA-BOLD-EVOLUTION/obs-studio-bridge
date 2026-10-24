@@ -33,5 +33,7 @@ test("packaged companion separates immutable assets from per-user state", () => 
   assert.match(launcher, /OBS_CREATOR_ASSISTANT_PACKAGE_ROOT/);
   assert.match(launcher, /OBS_CREATOR_ASSISTANT_DATA_ROOT/);
   assert.match(launcher, /OBS-Creator-Assistant-Background\.exe/);
+  assert.match(launcher, /if \(!existingToken\.empty\(\)\)\s+return existingToken/);
+  assert.match(launcher, /Replace it with a new\s+\/\/ per-user DPAPI value/);
   assert.match(bootstrap, /OBS_CREATOR_ASSISTANT_PACKAGE_ROOT/);
 });

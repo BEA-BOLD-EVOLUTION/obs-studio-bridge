@@ -69,27 +69,8 @@ bool writeBinary(const fs::path &file, const DATA_BLOB &blob)
 	return output.good();
 }
 
-std::string readOrCreateBridgeToken(const fs::path &root)
+std::string unprotectBridgeToken(std::vector<unsigned char> &encrypted)
 {
-	const fs::path secretPath = root / L"config" / L"bridge-token.dat";
-	std::vector<unsigned char> encrypted = readBinary(secretPath);
-	if (encrypted.empty()) {
-		std::array<unsigned char, 48> random{};
-		if (BCryptGenRandom(nullptr, random.data(), static_cast<ULONG>(random.size()),
-				    BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0)
-			return {};
-		DATA_BLOB plain{static_cast<DWORD>(random.size()), random.data()};
-		DATA_BLOB protectedData{};
-		if (!CryptProtectData(&plain, L"OBS Creator Assistant local bridge", nullptr, nullptr, nullptr,
-				      CRYPTPROTECT_UI_FORBIDDEN, &protectedData))
-			return {};
-		const bool saved = writeBinary(secretPath, protectedData);
-		LocalFree(protectedData.pbData);
-		if (!saved)
-			return {};
-		encrypted = readBinary(secretPath);
-	}
-
 	DATA_BLOB protectedData{static_cast<DWORD>(encrypted.size()), encrypted.data()};
 	DATA_BLOB plain{};
 	if (!CryptUnprotectData(&protectedData, nullptr, nullptr, nullptr, nullptr,
@@ -102,6 +83,36 @@ std::string readOrCreateBridgeToken(const fs::path &root)
 	SecureZeroMemory(plain.pbData, plain.cbData);
 	LocalFree(plain.pbData);
 	return token.str();
+}
+
+std::string readOrCreateBridgeToken(const fs::path &root)
+{
+	const fs::path secretPath = root / L"config" / L"bridge-token.dat";
+	std::vector<unsigned char> encrypted = readBinary(secretPath);
+	if (!encrypted.empty()) {
+		const std::string existingToken = unprotectBridgeToken(encrypted);
+		if (!existingToken.empty())
+			return existingToken;
+	}
+
+	// A token copied from another Windows account or left unreadable after an
+	// upgrade cannot authenticate the local bridge. Replace it with a new
+	// per-user DPAPI value instead of leaving the companion unable to start.
+	std::array<unsigned char, 48> random{};
+	if (BCryptGenRandom(nullptr, random.data(), static_cast<ULONG>(random.size()),
+			    BCRYPT_USE_SYSTEM_PREFERRED_RNG) != 0)
+		return {};
+	DATA_BLOB plain{static_cast<DWORD>(random.size()), random.data()};
+	DATA_BLOB protectedData{};
+	if (!CryptProtectData(&plain, L"OBS Creator Assistant local bridge", nullptr, nullptr, nullptr,
+			      CRYPTPROTECT_UI_FORBIDDEN, &protectedData))
+		return {};
+	const bool saved = writeBinary(secretPath, protectedData);
+	LocalFree(protectedData.pbData);
+	if (!saved)
+		return {};
+	encrypted = readBinary(secretPath);
+	return encrypted.empty() ? std::string{} : unprotectBridgeToken(encrypted);
 }
 
 int printBridgeToken(const fs::path &root)

@@ -10,6 +10,7 @@ on:
       - "src/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
   push:
     branches: [main]
     paths:
@@ -19,6 +20,7 @@ on:
       - "src/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
 
 permissions:
   contents: read
@@ -134,6 +136,10 @@ jobs:
           foreach ($path in $required) {
             if (-not (Test-Path -LiteralPath $path)) { throw "Missing installer payload: $path" }
           }
+          Push-Location release-payload/helper
+          & './runtime/node.exe' --input-type=module -e "await import('@modelcontextprotocol/sdk/server/streamableHttp.js')"
+          if ($LASTEXITCODE -ne 0) { throw "The packaged MCP runtime dependency graph is incomplete." }
+          Pop-Location
           $nodeSignature = Get-AuthenticodeSignature -LiteralPath 'release-payload/helper/runtime/node.exe'
           if ($nodeSignature.Status -ne 'Valid') {
             throw "The upstream Node.js runtime signature is invalid: $($nodeSignature.StatusMessage)"

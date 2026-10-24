@@ -8,10 +8,11 @@ The supported release flow is:
 2. Open OBS Studio and choose **Docks → OBS Creator Assistant**.
 3. Choose **Set Up Creator Assistant**.
 4. Let the assistant detect the production OBS WebSocket connection.
-5. Choose **Program View**, **Viewer View**, or **Both**.
-6. For Viewer View, choose AirPlay, software mirroring, hardware capture, or another existing OBS source.
-7. Optionally choose **Approve and connect ChatGPT** and complete the one-time account approval.
-8. Finish at **Ready**.
+5. Choose **Desktop View**, **Phone View**, or **Both**.
+6. For Desktop View, identify the existing production path: OBS Studio, TikTok LIVE Studio, or OBS Virtual Camera feeding TikTok LIVE Studio.
+7. For Phone View, choose the managed Android viewer, AirPlay, software mirroring, hardware capture, or another existing OBS source.
+8. Optionally choose **Approve and connect ChatGPT** and complete the one-time account approval.
+9. Finish at **Ready**.
 
 The installer adds the native OBS dock and starts the desktop companion without a console window. The companion starts with the signed-in Windows user. Creators are never asked to edit environment files, configuration profiles, bearer tokens, or credential files.
 
@@ -25,7 +26,7 @@ The current production package uses the hosted Creator Assistant relay, so it do
 
 Installed Windows builds generate 48 random bytes with the Windows cryptographic random-number generator. The desktop launcher protects them with user-scoped Windows Data Protection API (DPAPI) and stores only the encrypted blob under the application configuration directory. The decrypted bridge token exists only in the companion process environment.
 
-Non-secret setup choices are stored separately in `config/creator-settings.json`. This file contains the clipping mode, viewer capture method, local Viewer OBS endpoint, and optional source name. It never contains the bridge token or an OBS password.
+Non-secret setup choices are stored separately in `config/creator-settings.json`. This file contains the clipping mode, existing desktop production path, viewer capture method, local Viewer OBS endpoint, and optional source name. It never contains the bridge token, an OBS password, or TikTok credentials.
 
 Production OBS and Viewer/Clipper OBS remain independent:
 
