@@ -23,6 +23,8 @@ test("dashboard resource follows the MCP Apps UI contract", () => {
   assert.match(dashboardHtml, /Scares &amp; Surprises/);
   assert.match(dashboardHtml, /AI Features/);
   assert.match(dashboardHtml, /Camera Views/);
+  assert.match(dashboardHtml, /Video setup/);
+  assert.match(dashboardHtml, /Canvas, output size, and FPS together/);
   assert.match(dashboardHtml, /Identify cameras/);
   assert.match(dashboardHtml, /Multi-camera layout/);
   assert.match(dashboardHtml, /TikTok LIVE Studio/);

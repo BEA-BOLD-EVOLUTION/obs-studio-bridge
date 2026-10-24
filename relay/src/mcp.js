@@ -278,6 +278,34 @@ export function createCreatorMcpServer({
     arguments: { ...arguments_, confirmed }
   })));
 
+  server.registerTool("obs_inspect_video_setup", {
+    description: "Inspect the complete OBS Base Canvas, Output Resolution, FPS, and active outputs on the selected computer without changing anything.",
+    inputSchema: { deviceId: z.string().uuid().optional() },
+    annotations: readOnly
+  }, async ({ deviceId }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_inspect_video_setup",
+    arguments: {}
+  })));
+
+  server.registerTool("obs_apply_video_setup", {
+    description: "After explicit creator confirmation, apply and verify a complete OBS video setup. Named TikTok presets include Base Canvas, Output Resolution, and FPS. Custom setup requires all six values. Refuses to run while any OBS output is active.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      preset: z.enum(["tiktok_portrait_30", "tiktok_portrait_60", "tiktok_landscape_30", "tiktok_landscape_60", "custom"]),
+      baseWidth: z.number().int().min(8).max(4096).optional(),
+      baseHeight: z.number().int().min(8).max(4096).optional(),
+      outputWidth: z.number().int().min(8).max(4096).optional(),
+      outputHeight: z.number().int().min(8).max(4096).optional(),
+      fpsNumerator: z.number().int().min(1).max(240000).optional(),
+      fpsDenominator: z.number().int().min(1).max(1001).optional(),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves the exact Base Canvas, Output Resolution, and FPS values.")
+    },
+    annotations: { ...write, idempotentHint: true }
+  }, async ({ deviceId, confirmed, ...arguments_ }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_apply_video_setup",
+    arguments: { ...arguments_, confirmed }
+  })));
+
   server.registerTool("studio_inspect_tiktok_live", {
     description: "Check whether TikTok LIVE Studio is installed and running on the selected computer without changing it.",
     inputSchema: { deviceId: z.string().uuid().optional() },

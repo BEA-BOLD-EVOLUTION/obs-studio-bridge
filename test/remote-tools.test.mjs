@@ -27,6 +27,11 @@ test("camera discovery, verified layouts, and bounded TikTok Studio actions are 
   assert.equal(isRemoteToolAllowed("studio_launch_tiktok_live"), true);
 });
 
+test("complete video setup inspection and application are remotely allowlisted", () => {
+  assert.equal(isRemoteToolAllowed("obs_inspect_video_setup"), true);
+  assert.equal(isRemoteToolAllowed("obs_apply_video_setup"), true);
+});
+
 test("arbitrary OBS tools remain blocked", () => {
   assert.equal(isRemoteToolAllowed("obs_call"), false);
   assert.equal(isRemoteToolAllowed("DeleteScene"), false);

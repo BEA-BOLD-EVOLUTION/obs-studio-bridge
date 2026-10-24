@@ -134,6 +134,25 @@ Example requests:
 - “Start OBS Virtual Camera for TikTok Studio.”
 - “I ended my TikTok LIVE; stop OBS Virtual Camera.”
 
+#### Configure the complete OBS video setup
+
+- Inspect Base Canvas, Output Resolution, fractional FPS, and every available OBS output without changing anything.
+- Offer complete creator-friendly presets for TikTok portrait or landscape at 30 or 60 FPS.
+- Support a custom setup only when Base Canvas width/height, Output width/height, and FPS numerator/denominator are all supplied.
+- Show the exact values and require explicit creator confirmation before changing OBS.
+- Refuse the change while streaming, recording, replay, Virtual Camera, or another OBS output is active.
+- Apply all six video values together and read them back from OBS.
+- Make no change when the requested setup is already active.
+- Restore the previous video settings if OBS does not report the complete requested setup after applying it.
+
+Example requests:
+
+- “Set up OBS for TikTok portrait at 1080 by 1920 and 30 FPS.”
+- “Show me my complete canvas, output, and FPS setup without changing anything.”
+- “Use a landscape 60 FPS preset, but ask before applying it.”
+
+The video preset intentionally does not set an OBS streaming bitrate or encoder because TikTok LIVE Studio receives the finished video through OBS Virtual Camera. TikTok microphone selection, audio testing, account settings, and final **Go LIVE** remain in TikTok LIVE Studio.
+
 #### Identify cameras and build a multi-camera scene
 
 - List existing OBS camera inputs together with their active state and settings.
@@ -236,6 +255,7 @@ The localhost-only MCP bridge includes additional tools for local integrations a
 - Start or stop streaming.
 - Start or stop recording.
 - Inspect, start, or stop OBS Virtual Camera.
+- Inspect and configure Base Canvas, Output Resolution, and FPS as one confirmed, verified, restorable setup.
 - Discover physical and virtual Windows cameras and inspect existing OBS camera inputs.
 - Create a confirmed multi-camera layout from existing OBS camera inputs and verify its transforms.
 - Inspect or, after confirmation, open TikTok LIVE Studio.
@@ -261,7 +281,7 @@ OBS Creator Assistant does not currently:
 
 ## Phase 2 roadmap
 
-Phase 2 is being delivered in guarded slices. Virtual Camera control, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, confirmed role-specific scene/source/audio updates, camera discovery, confirmed multi-camera scene creation, and guarded TikTok LIVE Studio inspection and launch are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
+Phase 2 is being delivered in guarded slices. Virtual Camera control, complete confirmed video setup, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, confirmed role-specific scene/source/audio updates, camera discovery, confirmed multi-camera scene creation, and guarded TikTok LIVE Studio inspection and launch are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
 
 ### Safer remote production controls
 

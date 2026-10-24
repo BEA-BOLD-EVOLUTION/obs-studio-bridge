@@ -144,6 +144,22 @@
         "destructive_justification": "Does not delete scenes or inputs, accepts only one to four existing sources, and verifies each applied scene-item transform."
       }
     },
+    "obs_inspect_video_setup": {
+      "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
+      "justifications": {
+        "read_only_justification": "Reads the complete OBS Base Canvas, Output Resolution, FPS, and output activity without changing the creator's computer.",
+        "open_world_justification": "Reads private local OBS configuration and does not contact TikTok or another external service.",
+        "destructive_justification": "Does not change video settings or stop any OBS output."
+      }
+    },
+    "obs_apply_video_setup": {
+      "annotations": { "readOnlyHint": false, "openWorldHint": false, "destructiveHint": false, "idempotentHint": true },
+      "justifications": {
+        "read_only_justification": "After explicit confirmation, applies Base Canvas, Output Resolution, and FPS as one verified OBS video setup.",
+        "open_world_justification": "Changes private local OBS configuration and does not publish content or communicate with TikTok.",
+        "destructive_justification": "Refuses to run while any OBS output is active, makes no change when values already match, verifies all six values, and restores the previous settings if verification fails."
+      }
+    },
     "studio_inspect_tiktok_live": {
       "annotations": { "readOnlyHint": true, "openWorldHint": false, "destructiveHint": false },
       "justifications": {
@@ -264,6 +280,14 @@
       "file_attachment_urls": null,
       "tools_triggered": "obs_discover_cameras, obs_create_camera_layout",
       "expected_output": "Lists private local camera candidates and existing OBS camera sources, asks the creator to identify roles, proposes a bounded layout, requests explicit confirmation, and verifies the resulting OBS scene-item transforms.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Inspect and configure every OBS video setting required for a TikTok production preset.",
+      "user_prompt": "Set up OBS for a portrait TikTok LIVE at 1080 by 1920 and 30 FPS. Show me the complete setup and ask before applying it.",
+      "file_attachment_urls": null,
+      "tools_triggered": "obs_inspect_video_setup, obs_apply_video_setup",
+      "expected_output": "Reports Base Canvas, Output Resolution, FPS, and active outputs; proposes the complete portrait preset; requests explicit confirmation; refuses to change settings while an output is active; and verifies or restores the complete setup.",
       "expected_output_url": null
     },
     {

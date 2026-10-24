@@ -12,6 +12,7 @@ import { inspectTikTokLiveStudio, launchTikTokLiveStudio } from "./desktop-integ
 import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
 import { inspectProductionResources } from "./production-readiness.js";
 import { setProgramScene, setSceneSourceVisibility } from "./scene-controls.js";
+import { applyVideoSetup, inspectVideoSetup } from "./video-setup.js";
 import { registerWorkflowTools } from "./workflows.js";
 import { readCreatorSetup } from "./setup-config.js";
 
@@ -181,6 +182,27 @@ function createMcpServer(): McpServer {
     inputSchema: {},
     annotations: readOnlyAnnotations
   }, async () => result(await obsCall("GetVideoSettings")));
+
+  server.registerTool("obs_inspect_video_setup", {
+    description: "Inspect the complete OBS video setup and every active output before changing canvas, output resolution, or FPS.",
+    inputSchema: {},
+    annotations: readOnlyAnnotations
+  }, async () => result(await inspectVideoSetup(obsCall)));
+
+  server.registerTool("obs_apply_video_setup", {
+    description: "After explicit creator confirmation, apply and verify a complete OBS video setup including Base Canvas, Output Resolution, and FPS. Refuses to change settings while any OBS output is active and restores the previous values if verification fails.",
+    inputSchema: {
+      preset: z.enum(["tiktok_portrait_30", "tiktok_portrait_60", "tiktok_landscape_30", "tiktok_landscape_60", "custom"]),
+      baseWidth: z.number().int().min(8).max(4096).optional(),
+      baseHeight: z.number().int().min(8).max(4096).optional(),
+      outputWidth: z.number().int().min(8).max(4096).optional(),
+      outputHeight: z.number().int().min(8).max(4096).optional(),
+      fpsNumerator: z.number().int().min(1).max(240000).optional(),
+      fpsDenominator: z.number().int().min(1).max(1001).optional(),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves the exact Base Canvas, Output Resolution, and FPS values.")
+    },
+    annotations: { ...writeAnnotations, idempotentHint: true }
+  }, async ({ confirmed: _confirmed, ...input }) => result(await applyVideoSetup(obsCall, input)));
 
   server.registerTool("obs_get_performance_stats", {
     description: "Inspect OBS CPU, memory, FPS, render lag, and encoding lag statistics.",
