@@ -70,3 +70,12 @@ test("ChatGPT submission metadata includes complete guarded OBS video setup", as
   assert.equal(submission.tools.obs_apply_video_setup.annotations.readOnlyHint, false);
   assert.match(submission.tools.obs_apply_video_setup.justifications.destructive_justification, /restores the previous settings/i);
 });
+
+test("ChatGPT submission metadata includes bounded existing-media controls", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+  assert.equal(submission.tools.obs_inspect_media_inputs.annotations.readOnlyHint, true);
+  assert.equal(submission.tools.obs_control_media_input.annotations.readOnlyHint, false);
+  assert.equal(submission.tools.obs_control_media_input.annotations.idempotentHint, false);
+  assert.match(submission.tools.obs_control_media_input.justifications.destructive_justification, /never deletes media/i);
+});

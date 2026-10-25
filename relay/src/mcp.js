@@ -254,6 +254,29 @@ export function createCreatorMcpServer({
     annotations: readOnly
   }, async ({ deviceId }) => result(await dispatchCommand(accessToken, deviceId, { tool: "obs_list_scenes", arguments: {} })));
 
+  server.registerTool("obs_inspect_media_inputs", {
+    description: "List existing controllable OBS media sources such as jump scares and videos, including playback state, without exposing local file paths or changing playback.",
+    inputSchema: { deviceId: z.string().uuid().optional() },
+    annotations: readOnly
+  }, async ({ deviceId }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_inspect_media_inputs",
+    arguments: {}
+  })));
+
+  server.registerTool("obs_control_media_input", {
+    description: "After explicit creator confirmation, play, pause, stop, or restart one existing OBS media source. Use inspection first to obtain the exact source name.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      inputName: z.string().trim().min(1).max(120),
+      action: z.enum(["play", "pause", "stop", "restart"]),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves controlling this exact existing OBS media source.")
+    },
+    annotations: { ...write, idempotentHint: false }
+  }, async ({ deviceId, inputName, action, confirmed }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_control_media_input",
+    arguments: { inputName, action, confirmed }
+  })));
+
   server.registerTool("obs_discover_cameras", {
     description: "Use this to discover existing OBS camera sources and connected Windows camera candidates on a selected computer. Always ask the creator to identify which is Main, Overhead, Side, Pet Cam, Phone, or a custom role.",
     inputSchema: { deviceId: z.string().uuid().optional() },

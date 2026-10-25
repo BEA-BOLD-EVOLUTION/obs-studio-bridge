@@ -10,6 +10,7 @@ import { inspectAudioInput, setAudioInputMuted, setAudioInputVolume } from "./au
 import { createCameraLayout, discoverCameras } from "./camera-controls.js";
 import { inspectTikTokLiveStudio, launchTikTokLiveStudio } from "./desktop-integration.js";
 import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
+import { controlMediaInput, inspectMediaInputs, mediaActions } from "./media-controls.js";
 import { inspectProductionResources } from "./production-readiness.js";
 import { setProgramScene, setSceneSourceVisibility } from "./scene-controls.js";
 import { applyVideoSetup, inspectVideoSetup } from "./video-setup.js";
@@ -176,6 +177,22 @@ function createMcpServer(): McpServer {
     inputSchema: { inputName: z.string().min(1).max(120) },
     annotations: readOnlyAnnotations
   }, async ({ inputName }) => result(await inspectAudioInput(obsCall, inputName)));
+
+  server.registerTool("obs_inspect_media_inputs", {
+    description: "List existing OBS media sources and their playback state without exposing local file paths or changing playback.",
+    inputSchema: {},
+    annotations: readOnlyAnnotations
+  }, async () => result(await inspectMediaInputs(obsCall)));
+
+  server.registerTool("obs_control_media_input", {
+    description: "After explicit creator confirmation, play, pause, stop, or restart one existing OBS media source such as a jump scare or video. Validates the exact source and verifies the resulting playback state.",
+    inputSchema: {
+      inputName: z.string().trim().min(1).max(120),
+      action: z.enum(mediaActions),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves controlling this exact existing OBS media source.")
+    },
+    annotations: { ...writeAnnotations, idempotentHint: false }
+  }, async ({ inputName, action }) => result(await controlMediaInput(obsCall, inputName, action)));
 
   server.registerTool("obs_get_video_settings", {
     description: "Inspect OBS base/output resolution, frame rate, and video format settings.",

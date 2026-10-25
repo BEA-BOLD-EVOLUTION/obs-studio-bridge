@@ -153,6 +153,21 @@ Example requests:
 
 The video preset intentionally does not set an OBS streaming bitrate or encoder because TikTok LIVE Studio receives the finished video through OBS Virtual Camera. TikTok microphone selection, audio testing, account settings, and final **Go LIVE** remain in TikTok LIVE Studio.
 
+#### Inspect and control existing jump scares and videos
+
+- List media sources that OBS reports as controllable without exposing their local file paths.
+- Show the current playback state, cursor, and duration when OBS provides them.
+- Require explicit creator confirmation before playing, pausing, stopping, or restarting a named source.
+- Validate that the exact source exists and is a controllable media input.
+- Read the playback state back from OBS and report a failure if OBS does not apply the requested action.
+- Make play, pause, and stop requests idempotent when the source is already in the requested state.
+
+Example requests:
+
+- “Show me the jump-scare and video sources already configured in OBS.”
+- “Restart Jump Scare 2 after I confirm.”
+- “Stop the Dragon Video.”
+
 #### Identify cameras and build a multi-camera scene
 
 - List existing OBS camera inputs together with their active state and settings.

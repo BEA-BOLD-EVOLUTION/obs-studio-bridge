@@ -15,6 +15,8 @@ test("dashboard resource follows the MCP Apps UI contract", () => {
   assert.match(dashboardHtml, /tools\/call/);
   assert.match(dashboardHtml, /obs_get_dashboard_state/);
   assert.match(dashboardHtml, /obs_switch_scene/);
+  assert.match(dashboardHtml, /Jump scares &amp; videos/);
+  assert.match(dashboardHtml, /existing OBS media sources/);
   assert.match(dashboardHtml, /No typing needed/);
   assert.match(dashboardHtml, /id="modeToggle"/);
   assert.match(dashboardHtml, /Quick choices by type/);
