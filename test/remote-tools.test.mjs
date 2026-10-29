@@ -14,6 +14,13 @@ test("the production readiness inspection is remotely allowlisted", () => {
   assert.equal(isRemoteToolAllowed("obs_set_source_visibility"), true);
 });
 
+test("guarded scene lifecycle tools are remotely allowlisted", () => {
+  assert.equal(isRemoteToolAllowed("obs_create_scene"), true);
+  assert.equal(isRemoteToolAllowed("obs_duplicate_scene"), true);
+  assert.equal(isRemoteToolAllowed("obs_rename_scene"), true);
+  assert.equal(isRemoteToolAllowed("obs_remove_scene"), true);
+});
+
 test("focused audio inspection and bounded audio controls are remotely allowlisted", () => {
   assert.equal(isRemoteToolAllowed("obs_inspect_audio_input"), true);
   assert.equal(isRemoteToolAllowed("obs_set_input_mute"), true);

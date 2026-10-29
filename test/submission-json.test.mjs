@@ -79,3 +79,16 @@ test("ChatGPT submission metadata includes bounded existing-media controls", asy
   assert.equal(submission.tools.obs_control_media_input.annotations.idempotentHint, false);
   assert.match(submission.tools.obs_control_media_input.justifications.destructive_justification, /never deletes media/i);
 });
+
+test("ChatGPT submission metadata includes guarded scene lifecycle tools", async () => {
+  const raw = await readFile(new URL("../chatgpt-app-submission.json", import.meta.url), "utf8");
+  const submission = JSON.parse(raw);
+  for (const tool of ["obs_create_scene", "obs_duplicate_scene", "obs_rename_scene", "obs_remove_scene"]) {
+    assert.ok(submission.tools[tool], `${tool} must be documented`);
+    assert.equal(submission.tools[tool].annotations.readOnlyHint, false);
+  }
+  assert.equal(submission.tools.obs_remove_scene.annotations.destructiveHint, true);
+  assert.equal(submission.tools.obs_remove_scene.annotations.idempotentHint, false);
+  assert.equal(submission.tools.obs_duplicate_scene.annotations.idempotentHint, false);
+  assert.match(submission.tools.obs_remove_scene.justifications.destructive_justification, /exact-name confirmation/i);
+});

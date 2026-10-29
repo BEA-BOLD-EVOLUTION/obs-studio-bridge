@@ -254,6 +254,61 @@ export function createCreatorMcpServer({
     annotations: readOnly
   }, async ({ deviceId }) => result(await dispatchCommand(accessToken, deviceId, { tool: "obs_list_scenes", arguments: {} })));
 
+  server.registerTool("obs_create_scene", {
+    description: "After explicit creator confirmation, create one empty OBS scene on the selected computer and verify it exists.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      sceneName: z.string().trim().min(1).max(120),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves creating this exact scene.")
+    },
+    annotations: write
+  }, async ({ deviceId, sceneName, confirmed }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_create_scene",
+    arguments: { sceneName, confirmed }
+  })));
+
+  server.registerTool("obs_duplicate_scene", {
+    description: "After explicit creator confirmation, duplicate one existing OBS scene under a new name, including its sources and layout. Cleans up an incomplete new scene if duplication fails.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      sceneName: z.string().trim().min(1).max(120),
+      newSceneName: z.string().trim().min(1).max(120),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves duplicating this scene under the exact new name.")
+    },
+    annotations: write
+  }, async ({ deviceId, sceneName, newSceneName, confirmed }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_duplicate_scene",
+    arguments: { sceneName, newSceneName, confirmed }
+  })));
+
+  server.registerTool("obs_rename_scene", {
+    description: "After explicit creator confirmation, rename one existing OBS scene and verify the new name.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      sceneName: z.string().trim().min(1).max(120),
+      newSceneName: z.string().trim().min(1).max(120),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves this exact scene rename.")
+    },
+    annotations: write
+  }, async ({ deviceId, sceneName, newSceneName, confirmed }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_rename_scene",
+    arguments: { sceneName, newSceneName, confirmed }
+  })));
+
+  server.registerTool("obs_remove_scene", {
+    description: "Permanently remove one inactive OBS scene only after explicit creator confirmation and an exact-name confirmation. Refuses the active, preview, or last remaining scene.",
+    inputSchema: {
+      deviceId: z.string().uuid().optional(),
+      sceneName: z.string().trim().min(1).max(120),
+      confirmedSceneName: z.string().trim().min(1).max(120).describe("Must exactly match sceneName as a deliberate destructive confirmation."),
+      confirmed: z.literal(true).describe("Must be true only after the creator explicitly approves permanently removing this exact scene.")
+    },
+    annotations: { ...write, destructiveHint: true }
+  }, async ({ deviceId, sceneName, confirmedSceneName, confirmed }) => result(await dispatchCommand(accessToken, deviceId, {
+    tool: "obs_remove_scene",
+    arguments: { sceneName, confirmedSceneName, confirmed }
+  })));
+
   server.registerTool("obs_inspect_media_inputs", {
     description: "List existing controllable OBS media sources such as jump scares and videos, including playback state, without exposing local file paths or changing playback.",
     inputSchema: { deviceId: z.string().uuid().optional() },
