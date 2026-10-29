@@ -275,6 +275,8 @@ The localhost-only MCP bridge includes additional tools for local integrations a
 - Create a confirmed multi-camera layout from existing OBS camera inputs and verify its transforms.
 - Inspect or, after confirmation, open TikTok LIVE Studio.
 - Save the current replay buffer.
+- Create, duplicate, and rename scenes after confirmation, with post-change verification.
+- Permanently remove an inactive scene only after explicit approval and exact-name confirmation; the current program scene, current preview scene, and last remaining scene are protected.
 - Run the same media-transition, screen-sharing, and custom-workflow engines described above.
 
 Output controls check the current state first, so repeated start or stop requests do not unnecessarily toggle an output.
@@ -284,7 +286,8 @@ Output controls check the current state first, so repeated start or stop request
 OBS Creator Assistant does not currently:
 
 - Execute arbitrary OBS WebSocket requests.
-- Delete or rename scenes, sources, profiles, or scene collections. The only supported scene creation is the confirmed multi-camera layout action described above.
+- Delete or rename sources, profiles, or scene collections. Guarded scene creation, duplication, renaming, and removal are available in the current source.
+- Reorder the scene list. The current OBS WebSocket protocol does not expose scene-list ordering; source layering is a separate supported-protocol capability planned for the next scene/source slice.
 - Create a screen/window capture source or change which window an existing source captures.
 - Install OBS plugins or modify arbitrary files on the computer.
 - Close applications, restart the computer, or provide general operating-system control.
@@ -296,7 +299,7 @@ OBS Creator Assistant does not currently:
 
 ## Phase 2 roadmap
 
-Phase 2 is being delivered in guarded slices. Virtual Camera control, complete confirmed video setup, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, confirmed role-specific scene/source/audio updates, camera discovery, confirmed multi-camera scene creation, and guarded TikTok LIVE Studio inspection and launch are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
+Phase 2 is being delivered in guarded slices. Virtual Camera control, complete confirmed video setup, named computer roles, reusable dual-PC presets, read-only readiness, confirmed coordinated startup, restoration, on-demand dual-PC health snapshots, confirmed role-specific scene/source/audio updates, camera discovery, confirmed multi-camera scene creation, guarded scene creation/duplication/renaming/removal, and guarded TikTok LIVE Studio inspection and launch are available in the current source. The remaining items below are planned and may change based on testing, security review, OBS compatibility, and code-signing approval.
 
 ### Safer remote production controls
 
@@ -308,7 +311,9 @@ Phase 2 is being delivered in guarded slices. Virtual Camera control, complete c
 
 ### Scene and source management
 
-- Create, duplicate, rename, reorder, and remove scenes.
+Implemented in the current source: confirmed scene creation, full-scene duplication using existing sources and layout, conflict-safe renaming, and exact-name-confirmed removal with active/preview/last-scene protections. Scene-list reordering is not exposed by the current OBS WebSocket protocol and will require a separately reviewed native OBS-side capability.
+
+- Create, duplicate, rename, reorder, and remove scenes. *(Create, duplicate, rename, and guarded remove implemented; scene-list reorder blocked by the supported protocol.)*
 - Create and configure supported source types.
 - Change the display or window targeted by a capture source.
 - Move, resize, crop, align, and layer scene items.

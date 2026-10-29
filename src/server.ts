@@ -12,7 +12,14 @@ import { inspectTikTokLiveStudio, launchTikTokLiveStudio } from "./desktop-integ
 import { inspectVirtualCamera, setVirtualCameraActive } from "./output-controls.js";
 import { controlMediaInput, inspectMediaInputs, mediaActions } from "./media-controls.js";
 import { inspectProductionResources } from "./production-readiness.js";
-import { setProgramScene, setSceneSourceVisibility } from "./scene-controls.js";
+import {
+  createScene,
+  duplicateScene,
+  removeScene,
+  renameScene,
+  setProgramScene,
+  setSceneSourceVisibility
+} from "./scene-controls.js";
 import { applyVideoSetup, inspectVideoSetup } from "./video-setup.js";
 import { registerWorkflowTools } from "./workflows.js";
 import { readCreatorSetup } from "./setup-config.js";
@@ -107,6 +114,45 @@ function createMcpServer(): McpServer {
     inputSchema: {},
     annotations: readOnlyAnnotations
   }, async () => result(await obsCall("GetSceneList")));
+
+  server.registerTool("obs_create_scene", {
+    description: "After explicit creator confirmation, create one empty OBS scene and verify it exists.",
+    inputSchema: {
+      sceneName: z.string().trim().min(1).max(120),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves creating this exact scene.")
+    },
+    annotations: writeAnnotations
+  }, async ({ sceneName }) => result(await createScene(obsCall, sceneName)));
+
+  server.registerTool("obs_duplicate_scene", {
+    description: "After explicit creator confirmation, duplicate one existing OBS scene into a new scene, including its existing sources, visibility, transforms, crop, and layer order. Removes the incomplete new scene if duplication fails.",
+    inputSchema: {
+      sceneName: z.string().trim().min(1).max(120),
+      newSceneName: z.string().trim().min(1).max(120),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves duplicating this scene under the exact new name.")
+    },
+    annotations: { ...writeAnnotations, idempotentHint: false }
+  }, async ({ sceneName, newSceneName }) => result(await duplicateScene(obsCall, sceneName, newSceneName)));
+
+  server.registerTool("obs_rename_scene", {
+    description: "After explicit creator confirmation, rename one existing OBS scene and verify the new name.",
+    inputSchema: {
+      sceneName: z.string().trim().min(1).max(120),
+      newSceneName: z.string().trim().min(1).max(120),
+      confirmed: z.literal(true).describe("Must be true only after the creator approves this exact scene rename.")
+    },
+    annotations: writeAnnotations
+  }, async ({ sceneName, newSceneName }) => result(await renameScene(obsCall, sceneName, newSceneName)));
+
+  server.registerTool("obs_remove_scene", {
+    description: "Permanently remove one inactive OBS scene only after explicit creator confirmation and an exact-name confirmation. Refuses the current program scene, current preview scene, or last remaining scene.",
+    inputSchema: {
+      sceneName: z.string().trim().min(1).max(120),
+      confirmedSceneName: z.string().trim().min(1).max(120).describe("Must exactly match sceneName as a deliberate destructive confirmation."),
+      confirmed: z.literal(true).describe("Must be true only after the creator explicitly approves permanently removing this exact scene.")
+    },
+    annotations: { ...writeAnnotations, destructiveHint: true }
+  }, async ({ sceneName, confirmedSceneName }) => result(await removeScene(obsCall, sceneName, confirmedSceneName)));
 
   server.registerTool("obs_discover_cameras", {
     description: "List existing OBS camera sources and camera devices currently connected to this Windows computer so the creator can identify Main, Overhead, Side, Pet Cam, Phone, or a custom role.",
